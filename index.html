@@ -1824,7 +1824,7 @@ function updateCatalogIconPreview() {
   var hasIcon = !!currentCatalogIconData;
   preview.hidden = !hasIcon;
   placeholder.hidden = hasIcon;
-  deleteButton.hidden = !hasIcon;
+  deleteButton.hidden = true;
   uploadText.textContent = hasIcon ? '重新上传' : '上传本地图片';
   if (hasIcon) preview.src = currentCatalogIconData;
   else preview.removeAttribute('src');
