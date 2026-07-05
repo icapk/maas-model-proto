@@ -637,6 +637,17 @@
   #deployModal .deploy-modal-footer { flex:0 0 auto; min-height:auto; padding:14px 24px; position:static; border-top:1px solid #edf0f4; border-radius:0 0 14px 14px; background:rgba(255,255,255,.98); }
   #deployModal .deploy-modal-footer .btn { min-width:100px; height:38px; justify-content:center; border-radius:7px; font-size:14px; font-weight:700; }
   #deployModal .deploy-modal-footer .btn-primary { min-width:140px; border:0; background:linear-gradient(135deg,#4168f6,#5668ed); }
+  #deployModal .deploy-model-search-wrap { position:relative; }
+  #deployModal .deploy-model-search-input { width:100%; cursor:pointer; padding-right:32px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2399a4b5' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.35-4.35'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 10px center; }
+  #deployModal .deploy-model-search-dropdown { display:none; position:absolute; left:0; right:0; top:100%; z-index:60; max-height:220px; overflow-y:auto; margin-top:2px; background:#fff; border:1px solid #d5ddea; border-radius:7px; box-shadow:0 8px 24px rgba(15,23,42,.14); }
+  #deployModal .deploy-model-search-dropdown.open { display:block; }
+  #deployModal .deploy-model-search-dropdown .search-item { padding:9px 12px; cursor:pointer; font-size:13px; color:#344054; border-bottom:1px solid #f0f2f6; display:flex; flex-direction:column; gap:2px; }
+  #deployModal .deploy-model-search-dropdown .search-item:last-child { border-bottom:0; }
+  #deployModal .deploy-model-search-dropdown .search-item:hover,
+  #deployModal .deploy-model-search-dropdown .search-item.active { background:#f0f4ff; }
+  #deployModal .deploy-model-search-dropdown .search-item .item-name { font-weight:650; }
+  #deployModal .deploy-model-search-dropdown .search-item .item-meta { color:#99a4b5; font-size:12px; }
+  #deployModal .deploy-model-search-dropdown .search-empty { padding:16px 12px; text-align:center; color:#99a4b5; font-size:13px; }
 
   @media (max-width:900px) {
     .catalog-form-grid { grid-template-columns:1fr; }
@@ -909,9 +920,11 @@
     <div class="modal-body deploy-modal-body">
       <div class="form-group">
         <label class="form-label"><span class="req">*</span>名称（选择模型）</label>
-        <select class="form-select" id="deployName" onchange="onDeployModelSelect(this.value)">
-          <option value="">-- 请选择模型库中的模型 --</option>
-        </select>
+        <div class="deploy-model-search-wrap">
+          <input type="hidden" id="deployName" value="">
+          <input class="form-input deploy-model-search-input" id="deployModelSearchInput" placeholder="输入关键词搜索模型库中的模型..." autocomplete="off" onfocus="openDeployModelSearch()" oninput="filterDeployModelSearch()" onkeydown="navigateDeployModelSearch(event)">
+          <div class="deploy-model-search-dropdown" id="deployModelSearchDropdown"></div>
+        </div>
         <span class="form-hint">从模型库中选择已有模型，自动加载基础信息</span>
       </div>
       <div class="form-group">
@@ -1306,49 +1319,143 @@ function toggleDeployAdvanced(forceOpen) {
 
 // ==== Env / LoRA rows ====
 // ==== Deploy modal ====
-function populateDeployModelSelect() {
-  var select = document.getElementById('deployName');
-  if (!select) return;
-  select.innerHTML = '<option value="">-- 请选择模型库中的模型 --</option>' +
-    window.catalogModels.map(function(model) {
-      return '<option value="'+model.id+'">'+escapeCatalogText(model.name)+' ('+escapeCatalogText(model.size)+'B, '+escapeCatalogText(model.category)+')</option>';
-    }).join('');
+var deployModelSearchIdx = -1;
+
+function buildDeployModelSearchItems() {
+  var keyword = (document.getElementById('deployModelSearchInput').value || '').toLowerCase().trim();
+  if (!keyword) return window.catalogModels;
+  return window.catalogModels.filter(function(model) {
+    return model.name.toLowerCase().indexOf(keyword) !== -1;
+  });
 }
 
-function onDeployModelSelect(modelId) {
-  if (!modelId) {
-    document.getElementById('deployModelPath').value = '';
-    document.getElementById('bkVersion').value = '';
-    document.getElementById('deployRemark').value = '';
+function renderDeployModelSearchDropdown(items) {
+  var dropdown = document.getElementById('deployModelSearchDropdown');
+  if (!items.length) {
+    dropdown.innerHTML = '<div class="search-empty">无匹配模型</div>';
     return;
   }
-  var model = window.catalogModels.find(function(item) { return item.id === modelId; });
-  if (!model) return;
-  document.getElementById('deployModelPath').value = model.weightPath || '';
-  document.getElementById('bkVersion').value = model.imagePath || '';
-  document.getElementById('deployRemark').value = model.description || '';
+  var keyword = (document.getElementById('deployModelSearchInput').value || '').toLowerCase().trim();
+  var selectedId = document.getElementById('deployName').value;
+  dropdown.innerHTML = items.map(function(model, i) {
+    var cls = 'search-item' + (i === deployModelSearchIdx ? ' active' : '') + (model.id === selectedId ? ' selected' : '');
+    return '<div class="' + cls + '" data-id="' + model.id + '" data-idx="' + i + '" onmousedown="selectDeployModel(\'' + model.id + '\')">' +
+      '<span class="item-name">' + highlightMatch(model.name, keyword) + '</span>' +
+      '<span class="item-meta">' + escapeCatalogText(model.size) + 'B ｜ ' + escapeCatalogText(model.category) + ' ｜ ' + escapeCatalogText(model.developer || '') + '</span>' +
+    '</div>';
+  }).join('');
 }
+
+function highlightMatch(text, keyword) {
+  if (!keyword) return escapeCatalogText(text);
+  var escaped = escapeCatalogText(text);
+  var idx = escaped.toLowerCase().indexOf(keyword);
+  if (idx === -1) return escaped;
+  return escaped.substring(0, idx) + '<mark style="background:#fff3b0;color:#20242d;border-radius:2px;">' + escaped.substring(idx, idx + keyword.length) + '</mark>' + escaped.substring(idx + keyword.length);
+}
+
+function filterDeployModelSearch() {
+  deployModelSearchIdx = -1;
+  var items = buildDeployModelSearchItems();
+  var dropdown = document.getElementById('deployModelSearchDropdown');
+  renderDeployModelSearchDropdown(items);
+  dropdown.classList.add('open');
+}
+
+function openDeployModelSearch() {
+  deployModelSearchIdx = -1;
+  var items = buildDeployModelSearchItems();
+  renderDeployModelSearchDropdown(items);
+  document.getElementById('deployModelSearchDropdown').classList.add('open');
+}
+
+function closeDeployModelSearch() {
+  deployModelSearchIdx = -1;
+  var dropdown = document.getElementById('deployModelSearchDropdown');
+  dropdown.classList.remove('open');
+  var selectedId = document.getElementById('deployName').value;
+  if (selectedId) {
+    var model = window.catalogModels.find(function(m) { return m.id === selectedId; });
+    if (model) {
+      document.getElementById('deployModelSearchInput').value = model.name;
+    }
+  }
+}
+
+function navigateDeployModelSearch(e) {
+  var dropdown = document.getElementById('deployModelSearchDropdown');
+  var items = dropdown.querySelectorAll('.search-item');
+  if (!items.length) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    deployModelSearchIdx = (deployModelSearchIdx + 1) % items.length;
+    items.forEach(function(el, i) { el.classList.toggle('active', i === deployModelSearchIdx); });
+    items[deployModelSearchIdx].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    deployModelSearchIdx = (deployModelSearchIdx - 1 + items.length) % items.length;
+    items.forEach(function(el, i) { el.classList.toggle('active', i === deployModelSearchIdx); });
+    items[deployModelSearchIdx].scrollIntoView({ block: 'nearest' });
+  } else if (e.key === 'Enter') {
+    e.preventDefault();
+    if (deployModelSearchIdx >= 0 && items[deployModelSearchIdx]) {
+      selectDeployModel(items[deployModelSearchIdx].dataset.id);
+    }
+  } else if (e.key === 'Escape') {
+    closeDeployModelSearch();
+  }
+}
+
+function selectDeployModel(modelId) {
+  document.getElementById('deployName').value = modelId;
+  var model = window.catalogModels.find(function(m) { return m.id === modelId; });
+  if (model) {
+    document.getElementById('deployModelSearchInput').value = model.name;
+    document.getElementById('deployModelPath').value = model.weightPath || '';
+    document.getElementById('bkVersion').value = model.imagePath || '';
+    document.getElementById('deployRemark').value = model.description || '';
+  }
+  closeDeployModelSearch();
+}
+
+document.addEventListener('click', function(e) {
+  var wrap = document.querySelector('#deployModal .deploy-model-search-wrap');
+  if (wrap && !wrap.contains(e.target)) {
+    closeDeployModelSearch();
+  }
+});
 
 function showDeployModal(mode, deployData) {
   deployModalMode = mode;
   deployModalSourceName = deployData ? deployData.name : null;
   document.getElementById('deployModalTitle').textContent = mode === 'add' ? '新建部署' : mode === 'clone' ? '克隆部署' : '编辑部署';
-  populateDeployModelSelect();
   if (mode === 'add') {
-    onDeployModelSelect('');
+    document.getElementById('deployName').value = '';
+    document.getElementById('deployModelSearchInput').value = '';
+    document.getElementById('deployModelPath').value = '';
+    document.getElementById('bkVersion').value = '';
+    document.getElementById('deployRemark').value = '';
     document.getElementById('deployReplicaCount').textContent = '1';
     document.getElementById('deployResourceGroup').value = '推理组';
     document.getElementById('deployPlacementStrategy').value = 'free';
   } else if (mode === 'clone' && deployData) {
     document.getElementById('deployName').value = deployData.modelId || '';
-    onDeployModelSelect(deployData.modelId || '');
+    var cloneModel = window.catalogModels.find(function(m) { return m.id === deployData.modelId; });
+    document.getElementById('deployModelSearchInput').value = cloneModel ? cloneModel.name : '';
+    document.getElementById('deployModelPath').value = cloneModel ? cloneModel.weightPath || '' : '';
+    document.getElementById('bkVersion').value = cloneModel ? cloneModel.imagePath || '' : '';
+    document.getElementById('deployRemark').value = cloneModel ? cloneModel.description || '' : '';
     document.getElementById('deployResourceGroup').value = deployData.resourceGroup || '推理组';
     var replicas = parseInt(deployData.replicas) || 1;
     document.getElementById('deployReplicaCount').textContent = replicas;
     document.getElementById('deployPlacementStrategy').value = 'free';
   } else if (mode === 'edit' && deployData) {
     document.getElementById('deployName').value = deployData.modelId || '';
-    onDeployModelSelect(deployData.modelId || '');
+    var editModel = window.catalogModels.find(function(m) { return m.id === deployData.modelId; });
+    document.getElementById('deployModelSearchInput').value = editModel ? editModel.name : '';
+    document.getElementById('deployModelPath').value = editModel ? editModel.weightPath || '' : '';
+    document.getElementById('bkVersion').value = editModel ? editModel.imagePath || '' : '';
+    document.getElementById('deployRemark').value = editModel ? editModel.description || '' : '';
     document.getElementById('deployResourceGroup').value = deployData.resourceGroup || '推理组';
     var replicas = parseInt(deployData.replicas) || 1;
     document.getElementById('deployReplicaCount').textContent = replicas;
@@ -1404,6 +1511,7 @@ function showToast(msg, isError) {
 
 function handleDeploy() {
   var modelId = document.getElementById('deployName').value;
+  if (!modelId) return showToast('请从模型库中选择模型', true);
   var catalogModel = window.catalogModels.find(function(m) { return m.id === modelId; });
   var replicas = parseInt(document.getElementById('deployReplicaCount').textContent) || 1;
   var resourceGroup = document.getElementById('deployResourceGroup').value;
@@ -1965,8 +2073,7 @@ function deployCatalogModel(id) {
   if (!model) return;
   navTo('deploy');
   showDeployModal('add');
-  document.getElementById('deployName').value = model.id;
-  onDeployModelSelect(model.id);
+  selectDeployModel(model.id);
 }
 
 document.getElementById('catalogModal').addEventListener('click', function(e) {
