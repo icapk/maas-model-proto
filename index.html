@@ -1447,7 +1447,9 @@ function showDeployModal(mode, deployData) {
     document.getElementById('bkVersion').value = '';
     document.getElementById('deployRemark').value = '';
     document.getElementById('deployReplicaCount').textContent = '1';
-    document.getElementById('deployResourceGroup').value = '';
+    var rgSelect = document.getElementById('deployResourceGroup');
+    var realOptions = rgSelect.querySelectorAll('option:not([value=""])');
+    rgSelect.value = realOptions.length === 1 ? realOptions[0].value : '';
     document.getElementById('deployPlacementStrategy').value = 'free';
   } else if (mode === 'clone' && deployData) {
     document.getElementById('deployName').value = deployData.modelId || '';
