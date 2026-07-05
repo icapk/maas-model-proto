@@ -1373,7 +1373,7 @@ function filterDeployModelSearch() {
 function openDeployModelSearch() {
   deployModelSearchIdx = -1;
   var input = document.getElementById('deployModelSearchInput');
-  if (input.value) input.select();
+  if (input.value) input.value = '';
   var items = buildDeployModelSearchItems();
   renderDeployModelSearchDropdown(items);
   document.getElementById('deployModelSearchDropdown').classList.add('open');
