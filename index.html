@@ -1381,6 +1381,9 @@ function cloneDeploy(name) {
   var d = window.deployments.find(function(x) { return x.name === name; });
   if (d) { showDeployModal('clone', d); }
 }
+function monitorDeploy(name) {
+  window.open('https://grafana.example.com/d/model-monitor?deployment=' + encodeURIComponent(name), '_blank');
+}
 function deleteDeploy(name) {
   window.deployments = window.deployments.filter(function(x) { return x.name !== name; });
   renderDeployments();
