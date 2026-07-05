@@ -566,12 +566,20 @@
   #page-deploy .deploy-status { display:inline-flex; align-items:center; height:30px; padding:0 12px; border-radius:16px; font-size:14px; font-weight:700; white-space:nowrap; }
   #page-deploy .deploy-status.pending { background:#edf5ff; color:#1769dd; }
   #page-deploy .deploy-status.running { background:#eaf8ef; color:#0c9d42; }
-  #page-deploy .deploy-actions { display:flex; align-items:center; justify-content:center; gap:8px; }
+  #page-deploy .deploy-actions { display:flex; align-items:center; justify-content:center; gap:4px; position:relative; }
   #page-deploy .deploy-icon-btn { width:28px; height:32px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:0; background:transparent; color:#98a3b3; font-size:21px; cursor:pointer; border-radius:6px; }
   #page-deploy .deploy-icon-btn svg { width:18px; height:18px; }
   #page-deploy .deploy-icon-btn:hover { background:#f2f5fa; color:#536df5; }
   #page-deploy .deploy-icon-btn.danger { color:#ff3b41; }
   #page-deploy .deploy-icon-btn.danger:hover { background:#fff1f1; color:#e92d34; }
+  #page-deploy .deploy-more-wrap { position:relative; }
+  #page-deploy .deploy-more-menu { display:none; position:absolute; right:0; top:100%; z-index:50; min-width:120px; padding:4px; background:#fff; border:1px solid #e3e8f1; border-radius:8px; box-shadow:0 8px 24px rgba(15,23,42,.12); }
+  #page-deploy .deploy-more-menu.open { display:block; }
+  #page-deploy .deploy-more-menu button { display:flex; align-items:center; gap:8px; width:100%; padding:8px 12px; border:0; background:transparent; color:#344054; font-size:13px; font-family:inherit; cursor:pointer; border-radius:5px; white-space:nowrap; }
+  #page-deploy .deploy-more-menu button svg { width:16px; height:16px; flex-shrink:0; }
+  #page-deploy .deploy-more-menu button:hover { background:#f2f5fa; }
+  #page-deploy .deploy-more-menu button.danger { color:#e5484d; }
+  #page-deploy .deploy-more-menu button.danger:hover { background:#fff1f1; }
   #page-deploy .deploy-child-row[hidden] { display:none; }
   #page-deploy .replicas-stepper { display:inline-flex; align-items:center; gap:0; border:1px solid #dce2ec; border-radius:5px; overflow:hidden; background:#fff; vertical-align:middle; }
   #page-deploy .replicas-stepper button { width:22px; height:24px; padding:0; border:0; background:#f8fafc; color:#667085; font:700 14px/1 inherit; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
@@ -1607,12 +1615,17 @@ function renderDeployments() {
       '<td>'+d.createdAt+'</td>'+
       '<td><div class="deploy-actions">'+
         '<button class="deploy-icon-btn" type="button" title="编辑" onclick="editDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>'+
-        (d.status === 'running'
-          ? '<button class="deploy-icon-btn" type="button" title="停止" onclick="stopDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>'
-          : '<button class="deploy-icon-btn" type="button" title="启动" onclick="startDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>'
-        )+
-        '<button class="deploy-icon-btn" type="button" title="克隆" onclick="cloneDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>'+
-        '<button class="deploy-icon-btn danger" type="button" title="删除" onclick="deleteDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>'+
+        '<div class="deploy-more-wrap">'+
+          '<button class="deploy-icon-btn deploy-more-btn" type="button" title="更多" onclick="toggleDeployMore(event,\''+d.name+'\')">⋮</button>'+
+          '<div class="deploy-more-menu" id="deployMoreMenu-'+d.name.replace(/[^a-zA-Z0-9]/g,'_')+'">'+
+            (d.status === 'running'
+              ? '<button type="button" onclick="stopDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>停止</button>'
+              : '<button type="button" onclick="startDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg>启动</button>'
+            )+
+            '<button type="button" onclick="cloneDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>克隆</button>'+
+            '<button type="button" class="danger" onclick="deleteDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/></svg>删除</button>'+
+          '</div>'+
+        '</div>'+
         '</div></td>'+
       '</tr>';
     d.children.forEach(function(child) {
@@ -1634,6 +1647,26 @@ function renderDeployments() {
     document.querySelectorAll('.deploy-chevron').forEach(function(btn) { btn.classList.remove('closed'); });
   }
 }
+
+function toggleDeployMore(e, name) {
+  e.stopPropagation();
+  var menuId = 'deployMoreMenu-' + name.replace(/[^a-zA-Z0-9]/g, '_');
+  var menu = document.getElementById(menuId);
+  if (!menu) return;
+  // close all other menus
+  document.querySelectorAll('.deploy-more-menu.open').forEach(function(m) {
+    if (m !== menu) m.classList.remove('open');
+  });
+  menu.classList.toggle('open');
+}
+
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.deploy-more-wrap')) {
+    document.querySelectorAll('.deploy-more-menu.open').forEach(function(m) {
+      m.classList.remove('open');
+    });
+  }
+});
 
 function toggleDeployGroup(index) {
   var rows = document.querySelectorAll('[data-deploy-group="'+index+'"]');
