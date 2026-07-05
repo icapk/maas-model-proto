@@ -940,7 +940,7 @@
       <div class="deploy-form-row">
         <div class="form-group">
           <label class="form-label"><span class="req">*</span>资源组</label>
-          <select class="form-select" id="deployResourceGroup" onchange="updateDeployReplicaLimit()"><option>推理组</option><option>测试1</option><option>GPU-Cluster-Prod</option></select>
+          <select class="form-select" id="deployResourceGroup" onchange="updateDeployReplicaLimit()"><option value="">-- 请选择资源组 --</option><option>推理组</option><option>测试1</option><option>GPU-Cluster-Prod</option></select>
           <span class="form-hint">选择目标资源组，后端 GPU 选项显示该组内可用 GPU</span>
         </div>
         <div class="form-group">
@@ -1447,7 +1447,7 @@ function showDeployModal(mode, deployData) {
     document.getElementById('bkVersion').value = '';
     document.getElementById('deployRemark').value = '';
     document.getElementById('deployReplicaCount').textContent = '1';
-    document.getElementById('deployResourceGroup').value = '推理组';
+    document.getElementById('deployResourceGroup').value = '';
     document.getElementById('deployPlacementStrategy').value = 'free';
   } else if (mode === 'clone' && deployData) {
     document.getElementById('deployName').value = deployData.modelId || '';
@@ -1456,7 +1456,7 @@ function showDeployModal(mode, deployData) {
     document.getElementById('deployModelPath').value = cloneModel ? cloneModel.weightPath || '' : '';
     document.getElementById('bkVersion').value = cloneModel ? cloneModel.imagePath || '' : '';
     document.getElementById('deployRemark').value = cloneModel ? cloneModel.description || '' : '';
-    document.getElementById('deployResourceGroup').value = deployData.resourceGroup || '推理组';
+    document.getElementById('deployResourceGroup').value = deployData.resourceGroup || '';
     var replicas = parseInt(deployData.replicas) || 1;
     document.getElementById('deployReplicaCount').textContent = replicas;
     document.getElementById('deployPlacementStrategy').value = 'free';
@@ -1467,7 +1467,7 @@ function showDeployModal(mode, deployData) {
     document.getElementById('deployModelPath').value = editModel ? editModel.weightPath || '' : '';
     document.getElementById('bkVersion').value = editModel ? editModel.imagePath || '' : '';
     document.getElementById('deployRemark').value = editModel ? editModel.description || '' : '';
-    document.getElementById('deployResourceGroup').value = deployData.resourceGroup || '推理组';
+    document.getElementById('deployResourceGroup').value = deployData.resourceGroup || '';
     var replicas = parseInt(deployData.replicas) || 1;
     document.getElementById('deployReplicaCount').textContent = replicas;
   }
@@ -1523,9 +1523,10 @@ function showToast(msg, isError) {
 function handleDeploy() {
   var modelId = document.getElementById('deployName').value;
   if (!modelId) return showToast('请从模型库中选择模型', true);
+  var resourceGroup = document.getElementById('deployResourceGroup').value;
+  if (!resourceGroup) return showToast('请选择资源组', true);
   var catalogModel = window.catalogModels.find(function(m) { return m.id === modelId; });
   var replicas = parseInt(document.getElementById('deployReplicaCount').textContent) || 1;
-  var resourceGroup = document.getElementById('deployResourceGroup').value;
   var now = new Date().toISOString().replace('T',' ').substring(0, 19);
 
   if (deployModalMode === 'clone') {
