@@ -1,0 +1,1946 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MaaS 平台模型库管理 & 部署页面 — 原型</title>
+<style>
+  :root {
+    --primary: #4f46e5; --primary-light: #eef2ff;
+    --bg: #f5f6fa; --surface: #fff; --border: #e5e7eb;
+    --text: #1f2937; --text-secondary: #6b7280; --text-muted: #9ca3af;
+    --danger: #ef4444; --success: #10b981; --warning: #f59e0b;
+    --radius: 8px; --radius-lg: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,.08);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--bg); color: var(--text); line-height: 1.6;
+  }
+  .layout { display:flex; min-height:100vh; }
+  .sidebar {
+    width: 200px; background: #1e1b4b; color: #c7d2fe;
+    flex-shrink:0; padding: 20px 0;
+  }
+  .sidebar-logo { padding:0 18px 20px; font-size:16px; font-weight:700; color:#fff; display:flex; align-items:center; gap:8px; }
+  .sidebar-logo .dot { width:8px; height:8px; border-radius:50%; background:#818cf8; }
+  .sidebar-group { cursor:pointer; font-size:13px; user-select:none; }
+  .sidebar-group-header { padding: 9px 18px; display:flex; align-items:center; gap:8px; transition:.15s; }
+  .sidebar-group-header:hover { background: rgba(255,255,255,.06); }
+  .sidebar-group-header .arrow { font-size:10px; transition:.2s; margin-left:auto; }
+  .sidebar-group.open .sidebar-group-header .arrow { transform:rotate(90deg); }
+  .sidebar-group-body { display:none; }
+  .sidebar-group.open .sidebar-group-body { display:block; }
+  .sidebar-sub-item { padding: 7px 18px 7px 42px; cursor:pointer; font-size:12px; display:flex; align-items:center; gap:8px; transition:.15s; color:#9ca3af; }
+  .sidebar-sub-item:hover { background: rgba(255,255,255,.06); color:#c7d2fe; }
+  .sidebar-sub-item.active { background: rgba(255,255,255,.1); color:#fff; font-weight:600; }
+
+  .sidebar-item { padding: 9px 18px; cursor:pointer; font-size:13px; display:flex; align-items:center; gap:8px; transition:.15s; }
+  .sidebar-item:hover { background: rgba(255,255,255,.06); }
+  .sidebar-item.active { background: rgba(255,255,255,.1); color:#fff; font-weight:600; }
+
+  .main { min-width:0; flex:1; padding: 24px 28px; }
+  .breadcrumb { font-size:12px; color:var(--text-muted); margin-bottom:4px; }
+  .page-title { font-size:20px; font-weight:700; margin-bottom:18px; }
+
+  /* Segmented Tabs */
+  .segmented { display:inline-flex; background:#f3f4f6; border-radius:8px; padding:3px; margin-bottom:20px; }
+  .seg-item { padding:6px 20px; border-radius:6px; font-size:13px; cursor:pointer; color:var(--text-secondary); transition:.15s; white-space:nowrap; user-select:none; }
+  .seg-item.active { background:#fff; color:var(--primary); font-weight:600; box-shadow:0 1px 2px rgba(0,0,0,.08); }
+  .seg-item .badge { font-size:10px; background:var(--primary-light); color:var(--primary); padding:1px 6px; border-radius:4px; margin-left:4px; }
+
+  /* Card */
+  .card { background:var(--surface); border-radius:var(--radius-lg); box-shadow:var(--shadow); padding:24px; margin-bottom:24px; }
+  .card-header { font-size:14px; font-weight:700; margin-bottom:16px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+
+  /* Buttons */
+  .btn { display:inline-flex; align-items:center; gap:6px; padding:6px 16px; border-radius:6px; font-size:13px; font-weight:500; border:1px solid var(--border); cursor:pointer; background:var(--surface); color:var(--text); font-family:inherit; transition:.15s; }
+  .btn:hover { border-color:var(--primary); color:var(--primary); }
+  .btn-primary { background:var(--primary); color:#fff; border-color:var(--primary); }
+  .btn-primary:hover { background:#4338ca; }
+  .btn-sm { padding:4px 10px; font-size:12px; }
+  .btn-link { border:none; background:none; color:var(--primary); cursor:pointer; padding:0; font-size:13px; }
+  .btn-link:hover { text-decoration:underline; }
+
+  /* Toolbar */
+  .toolbar { display:flex; gap:10px; margin-bottom:16px; align-items:center; flex-wrap:wrap; }
+  .toolbar .spacer { flex:1; }
+  .search-box { padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; width:200px; font-family:inherit; }
+  .search-box:focus { outline:none; border-color:var(--primary); }
+  .filter-select { padding:6px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; background:var(--surface); font-family:inherit; cursor:pointer; }
+
+  /* Table */
+  table { width:100%; border-collapse:collapse; font-size:13px; }
+  th { text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); color:var(--text-secondary); font-weight:500; font-size:12px; background:#fafafa; }
+  td { padding:12px; border-bottom:1px solid #f3f4f6; }
+  tr:hover td { background:#fafafa; }
+  .model-icon { width:28px; height:28px; border-radius:6px; }
+  .tag { display:inline-block; padding:2px 8px; border-radius:4px; font-size:11px; font-weight:500; margin-right:3px; }
+  .tag-llm { background:#dbeafe; color:#1e40af; }
+  .tag-embedding { background:#d1fae5; color:#065f46; }
+  .tag-image { background:#ede9fe; color:#6b21a8; }
+  .tag-speech { background:#ffedd5; color:#9a3412; }
+  .tag-reranker { background:#cffafe; color:#155e75; }
+
+  /* Switch */
+  .switch { position:relative; width:40px; height:22px; display:inline-block; }
+  .switch input { opacity:0; width:0; height:0; }
+  .switch .slider { position:absolute; cursor:pointer; top:0;left:0;right:0;bottom:0; background:#d1d5db; border-radius:22px; transition:.2s; }
+  .switch .slider:before { content:""; position:absolute; height:16px; width:16px; left:3px; bottom:3px; background:#fff; border-radius:50%; transition:.2s; }
+  .switch input:checked+.slider { background:var(--primary); }
+  .switch input:checked+.slider:before { transform:translateX(18px); }
+
+  /* Pagination */
+  .pagination { display:flex; justify-content:flex-end; gap:4px; margin-top:16px; }
+  .pagination span { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; font-size:13px; border:1px solid var(--border); border-radius:6px; cursor:pointer; }
+  .pagination span.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+  .pagination span:hover:not(.active) { border-color:var(--primary); color:var(--primary); }
+  .pagination span.disabled { color:var(--text-muted); cursor:default; }
+  .pagination span.disabled:hover { border-color:var(--border); color:var(--text-muted); }
+
+  /* Modal */
+  .modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:100; justify-content:center; align-items:flex-start; padding-top:50px; }
+  .modal-overlay.show { display:flex; }
+  .modal { background:var(--surface); border-radius:var(--radius-lg); width:580px; max-height:82vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,.2); }
+  .modal-header { padding:16px 24px; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center; position:sticky; top:0; background:var(--surface); z-index:1; border-radius:12px 12px 0 0; }
+  .modal-header h3 { font-size:16px; }
+  .modal-close { width:28px; height:28px; border:none; background:none; cursor:pointer; border-radius:6px; font-size:18px; color:var(--text-muted); display:flex; align-items:center; justify-content:center; }
+  .modal-close:hover { background:#f3f4f6; }
+  .modal-body { padding:20px 24px; }
+  .modal-footer { padding:12px 24px; border-top:1px solid var(--border); display:flex; gap:8px; justify-content:flex-end; position:sticky; bottom:0; background:var(--surface); border-radius:0 0 12px 12px; }
+  .modal-warning { padding:10px 14px; border-radius:6px; font-size:12px; margin-bottom:16px; background:#fef9c3; color:#92400e; }
+
+  /* Form */
+  .form-group { margin-bottom:14px; }
+  .form-label { display:block; font-size:13px; font-weight:500; margin-bottom:4px; }
+  .form-label .req { color:var(--danger); margin-left:2px; }
+  .form-input, .form-select, .form-textarea {
+    width:100%; padding:7px 11px; border:1px solid var(--border);
+    border-radius:6px; font-size:13px; font-family:inherit;
+    background:var(--surface); transition:.15s;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus {
+    outline:none; border-color:var(--primary); box-shadow:0 0 0 3px rgba(79,70,229,.1);
+  }
+  .form-textarea { resize:vertical; min-height:70px; }
+  .form-hint { font-size:11px; color:var(--text-muted); margin-top:3px; }
+  .form-row { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  .form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:14px; }
+  .checkbox-label { display:flex; align-items:center; gap:8px; cursor:pointer; font-size:13px; }
+
+  /* Tabs for deploy */
+  .tab-bar { display:flex; gap:0; margin-bottom:20px; }
+  .tab-btn {
+    padding:8px 24px; font-size:13px; font-weight:600; cursor:pointer;
+    border:1px solid var(--border); background:var(--surface); color:var(--text-secondary);
+    transition:.15s; user-select:none;
+  }
+  .tab-btn:first-child { border-radius:8px 0 0 8px; }
+  .tab-btn:last-child  { border-radius:0 8px 8px 0; }
+  .tab-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+  .tab-btn:hover:not(.active) { border-color:var(--primary); color:var(--primary); }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  /* Collapse */
+  .collapse-trigger {
+    display:flex; align-items:center; gap:8px; padding:8px 0 12px;
+    cursor:pointer; font-size:13px; font-weight:600; color:var(--text-secondary);
+    user-select:none;
+  }
+  .collapse-trigger:hover { color:var(--text); }
+  .collapse-arrow { transition:.2s; font-size:10px; display:inline-block; }
+  .collapse-arrow.open { transform:rotate(90deg); }
+  .collapse-body { display:none; }
+  .collapse-body.open { display:block; }
+
+  /* Autocomplete */
+  .ac-wrap { position:relative; }
+  .ac-wrap .ac-arrow { position:absolute; right:10px; top:50%; transform:translateY(-50%); font-size:10px; color:var(--text-muted); pointer-events:none; }
+  .ac-dropdown {
+    display:none; position:absolute; top:100%; left:0; right:0; z-index:10;
+    background:var(--surface); border:1px solid var(--border); border-radius:6px;
+    box-shadow:0 4px 12px rgba(0,0,0,.1); margin-top:2px; max-height:150px; overflow-y:auto;
+  }
+  .ac-dropdown.show { display:block; }
+  .ac-dropdown .opt { padding:7px 11px; font-size:12px; cursor:pointer; }
+  .ac-dropdown .opt:hover { background:var(--primary-light); }
+
+  /* GPU selector */
+  .gpu-box { border:1px solid var(--border); border-radius:6px; padding:8px 11px; cursor:pointer; min-height:36px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .gpu-box:hover { border-color:var(--primary); }
+  .gpu-tag { background:var(--primary-light); color:var(--primary); padding:2px 8px; border-radius:4px; font-size:12px; display:flex; align-items:center; gap:4px; }
+  .gpu-tag .x { cursor:pointer; font-size:14px; line-height:1; }
+  .gpu-dd { display:none; position:absolute; top:100%; left:0; right:0; z-index:10; background:var(--surface); border:1px solid var(--border); border-radius:6px; box-shadow:0 4px 12px rgba(0,0,0,.1); margin-top:2px; }
+  .gpu-dd.show { display:block; }
+  .gpu-dd .opt { padding:8px 11px; font-size:12px; cursor:pointer; border-bottom:1px solid #f9fafb; }
+  .gpu-dd .opt:hover { background:var(--primary-light); }
+
+  .alert { padding:10px 14px; border-radius:6px; font-size:12px; margin-bottom:16px; }
+  .alert-info { background:#eef2ff; color:#4338ca; }
+  .danger-inline { color:var(--danger); font-size:11px; margin-top:3px; display:none; }
+
+  /* Expand arrow for deploy list */
+  .expand-arrow { display:inline-block; cursor:pointer; font-size:12px; transition:.2s; user-select:none; width:16px; text-align:center; color:var(--text-muted); }
+  .expand-arrow.open { transform:rotate(90deg); color:var(--primary); }
+  .expand-row { display:none; }
+  .expand-row.open { display:table-row; }
+  .expand-row td { padding:0 12px 12px 40px; }
+  .sub-table { width:100%; font-size:12px; border-collapse:collapse; background:#fafbfc; border-radius:6px; overflow:hidden; }
+  .sub-table th { background:#eef0f6; font-size:11px; padding:6px 10px; }
+  .sub-table td { padding:8px 10px; border-bottom:1px solid #eee; }
+
+  .page { display:none; }
+  .page.active { display:block; }
+  .deploy-card { max-width:780px; }
+
+  /* Model instances screenshot replica */
+  .instance-workspace {
+    overflow:hidden; margin-bottom:24px; background:#fff; border:1px solid #e4e9f1;
+    border-radius:14px; box-shadow:0 8px 28px rgba(31,41,55,.045);
+  }
+  .instance-toolbar {
+    display:flex; align-items:center; gap:12px; padding:18px 20px;
+    border-bottom:1px solid #edf0f5; background:#fff;
+  }
+  .instance-search {
+    width:260px; height:48px; padding:0 15px; display:flex; align-items:center; gap:10px;
+    border:1px solid #dce3ed; border-radius:8px; color:#9aa5b5; font-size:22px; background:#fff;
+  }
+  .instance-search:focus-within { border-color:#6b7df7; box-shadow:0 0 0 3px rgba(79,103,246,.09); }
+  .instance-search input { width:100%; border:0; outline:0; color:#313846; font:inherit; font-size:14px; background:transparent; }
+  .instance-search input::placeholder { color:#8d98a8; }
+  .instance-control,.instance-page-size {
+    height:48px; padding:0 36px 0 14px; border:1px solid #dce3ed; border-radius:8px;
+    color:#384152; font:inherit; font-size:14px; background:#fff; cursor:pointer;
+  }
+  .instance-control { min-width:190px; }
+  .instance-icon-btn,.instance-delete-btn,.instance-page-btn {
+    height:48px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px;
+    border:1px solid #dce3ed; background:#fff; color:#6f7b8d; font:inherit; cursor:pointer; transition:.15s;
+  }
+  .instance-icon-btn { width:48px; font-size:23px; }
+  .instance-icon-btn:hover,.instance-page-btn:hover:not(:disabled) { border-color:#4f67f4; color:#4f67f4; }
+  .instance-icon-btn.is-refreshing { animation:instance-spin .55s linear; }
+  @keyframes instance-spin { to { transform:rotate(360deg); } }
+  .instance-delete-btn { min-width:132px; padding:0 18px; border-color:#ff9e9e; color:#ee3f43; font-weight:650; }
+  .instance-delete-btn:hover { background:#fff5f5; border-color:#f05252; }
+  .instance-reset-btn {
+    height:48px; padding:0 18px; display:inline-flex; align-items:center; gap:7px;
+    border:1px solid #d5ddea; border-radius:8px; background:#fff; color:#344054;
+    font:600 15px/1.2 inherit; cursor:pointer; transition:.15s;
+  }
+  .instance-reset-btn svg { width:17px; height:17px; }
+  .instance-reset-btn:hover { border-color:#9eacf8; color:#4169f6; }
+
+  .instance-table-wrap { width:100%; overflow-x:auto; }
+  .instance-table { min-width:1120px; table-layout:fixed; font-size:14px; }
+  .instance-table th { height:58px; padding:0 14px; color:#687386; background:#fafbfc; font-size:13px; font-weight:650; }
+  .instance-table td { height:92px; padding:14px; color:#4c5668; vertical-align:middle; }
+  .instance-table tbody tr:hover td { background:#fbfcff; }
+  .instance-table th:first-child,.instance-table td:first-child { width:50px; text-align:center; }
+  .instance-table th:nth-child(2) { width:275px; }
+  .instance-table th:nth-child(3) { width:120px; }
+  .instance-table th:nth-child(4) { width:95px; }
+  .instance-table th:nth-child(5) { width:130px; }
+  .instance-table th:nth-child(6) { width:150px; }
+  .instance-table th:nth-child(7) { width:190px; }
+  .instance-table th:nth-child(8) { width:220px; }
+  .instance-table input[type="checkbox"] { width:18px; height:18px; margin:0; accent-color:#526df4; cursor:pointer; }
+  .instance-name { color:#202631; font-size:15px; font-weight:700; line-height:1.35; }
+  .instance-runtime { margin-top:5px; color:#9aa5b5; font:600 12px/1.3 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  .instance-node { color:#c4cad3; }
+  .instance-memory { color:#545e70; font:600 13px ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; }
+  .instance-status {
+    min-width:112px; height:36px; padding:0 14px; display:inline-flex; align-items:center; justify-content:center; gap:7px;
+    border:1px solid; border-radius:18px; font-weight:700; line-height:1;
+  }
+  .instance-status::before { content:""; width:9px; height:9px; border:2px solid currentColor; border-radius:50%; }
+  .instance-status.pending { color:#3475ee; border-color:#b9d6ff; background:#f6faff; }
+  .instance-status.error { color:#d55a28; border-color:#ffc58e; background:#fff9f0; }
+  .instance-status.error::before { content:"×"; width:auto; height:auto; border:0; font-size:14px; }
+  .instance-status.running { color:#18a94b; border-color:#a9e8bd; background:#f3fff6; }
+  .instance-status.running::before { border-color:#20b552; background:#20b552; }
+  .instance-actions { display:flex; align-items:center; gap:8px; white-space:nowrap; }
+  .instance-action {
+    height:32px; padding:0 10px; border:1px solid #dbe2ec; border-radius:6px;
+    background:#fff; color:#536bdf; font-family:inherit; font-size:12px; font-weight:600; cursor:pointer;
+  }
+  .instance-action:hover { border-color:#6d7ff0; background:#f5f7ff; }
+  .instance-empty { height:180px!important; color:#9aa5b5!important; text-align:center; }
+  .instance-pagination {
+    min-height:72px; padding:12px 20px; display:flex; align-items:center; justify-content:flex-end; gap:10px;
+    border-top:1px solid #edf0f5; color:#8c97a7; font-size:14px;
+  }
+  .instance-page-size { height:40px; min-width:100px; padding-right:28px; }
+  .instance-page-btn { width:40px; height:40px; }
+  .instance-page-btn.active { color:#fff; border-color:#516bf3; background:#516bf3; }
+  .instance-page-btn:disabled { color:#c8ced8; cursor:not-allowed; }
+
+  /* Instance log modal */
+  #instanceLogModal { z-index:220; padding:18px; align-items:center; background:rgba(25,31,41,.46); }
+  .instance-log-dialog {
+    width:min(1320px,calc(100vw - 36px)); height:min(820px,calc(100vh - 36px));
+    display:flex; flex-direction:column; overflow:hidden; border-radius:18px; background:#fff;
+    box-shadow:0 30px 90px rgba(15,23,42,.28);
+  }
+  .instance-log-header { height:68px; padding:0 24px; display:flex; align-items:center; justify-content:space-between; flex:0 0 auto; }
+  .instance-log-title { color:#20242c; font-size:20px; font-weight:750; }
+  .instance-log-close { width:38px; height:38px; border:0; border-radius:8px; background:transparent; color:#2f3641; font-size:28px; cursor:pointer; }
+  .instance-log-close:hover { background:#f2f4f7; }
+  .instance-log-body { min-height:0; flex:1; padding:0 24px 24px; }
+  .instance-log-console {
+    width:100%; height:100%; margin:0; overflow:auto; padding:14px 16px; border-radius:3px;
+    background:#171717; color:#d5d5d5; font:14px/1.65 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    white-space:pre-wrap; word-break:break-word;
+  }
+
+  /* Model catalog screenshot replica */
+  .catalog-workspace { margin-bottom:24px; }
+  .catalog-workspace .toolbar {
+    padding:16px 18px; margin-bottom:20px; background:#fff;
+    border:1px solid #e3e8f1; border-radius:10px; box-shadow:0 2px 10px rgba(31,41,55,.035);
+  }
+  .catalog-search-wrap { position:relative; width:260px; flex:0 0 260px; }
+  .catalog-search-wrap .search-box { width:100%; height:38px; padding:6px 40px 6px 38px; }
+  .catalog-search-icon {
+    position:absolute; left:12px; top:50%; width:17px; height:17px; transform:translateY(-50%);
+    color:#aab2bf; pointer-events:none;
+  }
+  .catalog-search-clear {
+    position:absolute; right:9px; top:50%; width:22px; height:22px; padding:0; transform:translateY(-50%);
+    display:flex; align-items:center; justify-content:center; border:0; border-radius:50%;
+    background:#c5c9d0; color:#fff; font:500 16px/1 inherit; cursor:pointer; transition:background .15s,transform .15s;
+  }
+  .catalog-search-clear:hover { background:#9da5b1; transform:translateY(-50%) scale(1.04); }
+  .catalog-search-clear:focus-visible { outline:2px solid #6b7df7; outline-offset:2px; }
+  .catalog-search-clear[hidden] { display:none; }
+  .catalog-reset-btn {
+    height:38px; padding:0 14px; display:inline-flex; align-items:center; gap:6px;
+    border:1px solid #d5ddea; border-radius:8px; background:#fff; color:#344054;
+    font-size:13px; font-family:inherit; cursor:pointer; transition:.15s; white-space:nowrap;
+  }
+  .catalog-reset-btn svg { width:16px; height:16px; }
+  .catalog-reset-btn:hover { background:#f8fafc; border-color:#b0bdd0; }
+  .catalog-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:16px; }
+  .catalog-card {
+    min-width:0; min-height:260px; padding:16px; display:flex; flex-direction:column;
+    background:#fff; border:1px solid #dfe5ee; border-radius:10px;
+    box-shadow:0 3px 12px rgba(31,41,55,.03); transition:transform .18s,box-shadow .18s,border-color .18s;
+  }
+  .catalog-card:hover { transform:translateY(-2px); border-color:#cad4e4; box-shadow:0 8px 20px rgba(31,41,55,.07); }
+  .catalog-card-head { display:flex; align-items:center; gap:12px; min-width:0; margin-bottom:14px; }
+  .catalog-brand {
+    width:44px; height:44px; border-radius:9px; flex:0 0 44px; display:flex; align-items:center; justify-content:center;
+    color:#fff; font-size:19px; font-weight:750; line-height:1; box-shadow:inset 0 0 0 1px rgba(255,255,255,.12);
+  }
+  .catalog-brand.brand-tongyi { background:linear-gradient(145deg,#ff5537,#ff7135); }
+  .catalog-brand.brand-zhipu { background:linear-gradient(145deg,#4267ef,#5668ff); }
+  .catalog-brand.brand-deepseek { background:linear-gradient(145deg,#079bd2,#18b7e8); }
+  .catalog-brand.brand-baichuan { background:linear-gradient(145deg,#6d28d9,#8b2cf2); }
+  .catalog-brand.brand-meta { background:linear-gradient(145deg,#bd123e,#dd174c); }
+  .catalog-brand-image { object-fit:cover; background:#f4f6fa; }
+  .catalog-title-block { min-width:0; flex:1; }
+  .catalog-card-name { min-width:0; color:#20232a; font-size:17px; font-weight:700; line-height:1.35; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .catalog-more { margin-left:auto; border:0; background:transparent; color:#9ba6b7; font-size:18px; letter-spacing:1px; cursor:pointer; padding:5px 0 5px 8px; line-height:1; }
+  .catalog-more:hover { color:#53627a; }
+  .catalog-meta { display:grid; grid-template-columns:70px minmax(0,1fr); row-gap:8px; align-items:center; font-size:13px; line-height:1.35; }
+  .catalog-meta-label { color:#9aa5b5; white-space:nowrap; }
+  .catalog-meta-value { color:#374151; text-align:right; font-weight:650; min-width:0; }
+  .catalog-developer-value { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .catalog-tags { display:flex; align-items:center; justify-content:flex-end; gap:7px; min-width:0; }
+  .catalog-tag { display:inline-flex; align-items:center; min-height:22px; padding:2px 7px; border-radius:5px; font-size:12px; font-weight:650; white-space:nowrap; }
+  .catalog-tag.category-llm { background:#edf2ff; color:#4169f6; }
+  .catalog-tag.category-embedding { background:#ecf9ef; color:#128237; }
+  .catalog-tag.category-image { background:#fff4e9; color:#c84413; }
+  .catalog-tag.category-reasoning { background:#fff0f3; color:#cc1748; }
+  .catalog-actions { margin-top:auto; padding-top:12px; border-top:1px solid #edf0f5; display:flex; align-items:center; gap:14px; }
+  .catalog-action-link { border:0; background:transparent; color:#4169f6; font-size:14px; font-weight:650; cursor:pointer; padding:5px 0; }
+  .catalog-action-link:hover { color:#274bd8; }
+  .catalog-deploy-btn {
+    margin-left:auto; min-width:64px; height:34px; border:0; border-radius:7px; cursor:pointer;
+    background:linear-gradient(135deg,#4168f6,#5668ed); color:#fff; font-size:14px; font-weight:700;
+    box-shadow:0 3px 8px rgba(65,104,246,.16);
+  }
+  .catalog-deploy-btn:hover { background:linear-gradient(135deg,#3157e9,#4859df); }
+  .catalog-empty { display:none; padding:80px 20px; color:#98a2b3; text-align:center; background:#fff; border:1px dashed #d8dee9; border-radius:14px; }
+
+  /* Catalog create/edit modal */
+  #catalogModal { align-items:flex-start; padding:16px; background:rgba(31,41,55,.44); overflow:hidden; }
+  .catalog-modal {
+    width:min(860px,calc(100vw - 32px)); max-height:calc(100vh - 32px); overflow:hidden;
+    display:flex; flex-direction:column; border-radius:14px; background:#fff; box-shadow:0 28px 80px rgba(15,23,42,.24);
+  }
+  .catalog-modal .modal-header { flex:0 0 auto; padding:18px 24px 16px; border-bottom:1px solid #edf0f4; border-radius:14px 14px 0 0; position:static; }
+  .catalog-modal .modal-header h3 { font-size:20px; line-height:1.25; color:#20232a; }
+  .catalog-modal .modal-close { width:30px; height:30px; font-size:24px; font-weight:600; color:#9aa4b3; }
+  .catalog-modal .modal-body { flex:1 1 auto; overflow-y:auto; padding:18px 24px 20px; }
+  .catalog-form-grid { display:grid; grid-template-columns:1fr 1fr; column-gap:20px; row-gap:0; align-items:start; }
+  .catalog-form-column { min-width:0; }
+  .catalog-section { padding:0 0 30px; margin:0 0 30px; border-bottom:1px solid #e9edf3; }
+  .catalog-section:last-of-type { margin-bottom:0; border-bottom:0; }
+  .catalog-section-head { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; margin-bottom:22px; }
+  .catalog-section-title { color:#202631; font-size:18px; font-weight:750; line-height:1.35; }
+  .catalog-section-desc { margin-top:4px; color:#8b96a7; font-size:13px; line-height:1.5; }
+  .catalog-section-grid { display:grid; grid-template-columns:1fr 1fr; column-gap:28px; row-gap:0; align-items:start; }
+  .catalog-field-wide { grid-column:1 / -1; }
+  .catalog-modal .form-group { margin-bottom:14px; }
+  .catalog-modal .form-label { margin-bottom:5px; color:#344054; font-size:13px; font-weight:650; }
+  .catalog-modal .form-label .req { margin-right:4px; margin-left:0; }
+  .catalog-modal .form-input,.catalog-modal .form-select,.catalog-modal .form-textarea {
+    height:40px; padding:0 12px; border:1px solid #d5ddea; border-radius:7px; color:#20232a; font-size:13px;
+  }
+  .catalog-modal .form-input::placeholder,.catalog-modal .form-textarea::placeholder { color:#98a1af; }
+  .catalog-modal .form-textarea { height:72px; min-height:72px; padding-top:9px; line-height:1.5; }
+  .catalog-modal .form-hint { display:block; margin-top:4px; color:#929dad; font-size:11px; line-height:1.4; }
+  .brand-select-wrap { position:relative; }
+  .brand-select {
+    width:100%; height:52px; padding:0 16px; display:flex; align-items:center; gap:12px; border:1px solid #d5ddea;
+    border-radius:8px; background:#fff; color:#20232a; font-family:inherit; font-size:15px; cursor:pointer;
+  }
+  .brand-select:focus { outline:none; border-color:#4f6df5; box-shadow:0 0 0 3px rgba(79,109,245,.1); }
+  .brand-select .catalog-brand { width:34px; height:34px; flex-basis:34px; border-radius:7px; font-size:15px; }
+  .brand-chevron { margin-left:auto; color:#9aa5b5; font-size:17px; transition:transform .15s; }
+  .brand-select[aria-expanded="true"] .brand-chevron { transform:rotate(180deg); }
+  .brand-menu {
+    display:none; position:absolute; z-index:120; top:58px; left:0; right:0; padding:0; overflow:hidden;
+    background:#fff; border:1px solid #d7dfeb; border-radius:12px; box-shadow:0 15px 34px rgba(31,41,55,.13);
+  }
+  .brand-menu.show { display:block; }
+  .brand-option { width:100%; height:58px; padding:0 18px; display:flex; align-items:center; gap:13px; border:0; background:#fff; color:#20232a; font-family:inherit; font-size:15px; text-align:left; cursor:pointer; }
+  .brand-option:hover,.brand-option.selected { background:#f0f4ff; }
+  .brand-option .catalog-brand { width:34px; height:34px; flex-basis:34px; border-radius:7px; font-size:15px; }
+  .catalog-full-row { grid-column:1 / -1; }
+  .metadata-choices { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+  .metadata-choice { position:relative; cursor:pointer; }
+  .metadata-choice input { position:absolute; opacity:0; pointer-events:none; }
+  .metadata-choice span { min-height:36px; padding:7px 12px; display:inline-flex; align-items:center; border:1px solid #d9e0ea; border-radius:7px; background:#fff; color:#596579; font-size:13px; line-height:1.35; transition:.15s; }
+  .metadata-choice:hover span { border-color:#9babe9; color:#4059cd; }
+  .metadata-choice input:checked + span { border-color:#7890f6; background:#f0f4ff; color:#3f5bd8; font-weight:650; box-shadow:0 0 0 1px rgba(81,107,243,.06); }
+  .metadata-choice input:disabled + span { cursor:default; opacity:.72; }
+  .metadata-label-row { display:flex; align-items:center; gap:9px; margin-bottom:9px; }
+  .metadata-label-row .form-label { margin:0; }
+  .metadata-auto-badge { display:inline-flex; align-items:center; min-height:24px; padding:2px 8px; border-radius:12px; background:#eef7ff; color:#3373b8; font-size:11px; font-weight:650; }
+  .catalog-tag-editor { min-height:52px; padding:7px 10px; display:flex; align-items:center; flex-wrap:wrap; gap:7px; border:1px solid #d5ddea; border-radius:8px; background:#fff; }
+  .catalog-tag-editor:focus-within { border-color:#4f6df5; box-shadow:0 0 0 3px rgba(79,109,245,.1); }
+  .catalog-tag-list { display:contents; }
+  .catalog-tag-chip { min-height:32px; padding:5px 8px 5px 10px; display:inline-flex; align-items:center; gap:6px; border-radius:6px; background:#f0f3f8; color:#536074; font-size:12px; font-weight:600; }
+  .catalog-tag-remove { width:18px; height:18px; display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:4px; background:transparent; color:#8e99a8; font-size:15px; cursor:pointer; }
+  .catalog-tag-remove:hover { background:#dfe5ee; color:#49566b; }
+  .catalog-tag-input { min-width:180px; height:34px; flex:1 1 180px; border:0; outline:0; color:#303847; font-family:inherit; font-size:13px; }
+  .catalog-form-error { display:none; margin:-10px 0 18px; padding:10px 13px; border-radius:8px; background:#fef2f2; color:#dc2626; font-size:14px; }
+  .catalog-modal-footer { flex:0 0 auto; padding:12px 24px; border-top:1px solid #edf0f4; display:flex; justify-content:flex-end; gap:10px; background:rgba(255,255,255,.97); }
+  .catalog-modal-footer .btn { height:40px; min-width:84px; justify-content:center; border-radius:8px; font-size:14px; font-weight:650; }
+  .catalog-modal-footer .btn-primary { min-width:92px; background:linear-gradient(135deg,#4168f6,#5668ed); border:0; }
+  .catalog-modal.is-view .catalog-modal-footer .btn-primary { display:none; }
+  .catalog-modal.is-view input,.catalog-modal.is-view textarea,.catalog-modal.is-view select,.catalog-modal.is-view .brand-select { background:#f8fafc; cursor:default; }
+  .catalog-modal.is-view .catalog-tag-remove { display:none; }
+  .catalog-icon-field { display:flex; align-items:center; gap:12px; min-height:56px; }
+  .catalog-icon-display {
+    width:56px; height:56px; flex:0 0 56px; display:flex; align-items:center; justify-content:center; overflow:hidden;
+    border:1px solid #d9e0ea; border-radius:8px; background:#f8fafc;
+  }
+  .catalog-icon-preview {
+    width:56px; height:56px; object-fit:cover; background:#f8fafc;
+  }
+  .catalog-icon-placeholder {
+    width:56px; height:56px; display:flex; align-items:center; justify-content:center; color:#586273;
+  }
+  .catalog-icon-default-art { width:36px; height:36px; display:block; color:#566173; }
+  .catalog-icon-actions { min-width:0; display:flex; flex-direction:column; align-items:flex-start; gap:5px; }
+  .catalog-icon-action-buttons { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+  .catalog-icon-action-hint { color:#929dad; font-size:11px; line-height:1.35; white-space:nowrap; }
+  .catalog-icon-upload { height:36px; padding:0 13px; display:inline-flex; align-items:center; border:1px solid #cfd7e5; border-radius:7px; color:#4b5fdf; background:#fff; font-size:13px; font-weight:650; cursor:pointer; }
+  .catalog-icon-upload:hover { border-color:#7890f6; background:#f5f7ff; }
+  .catalog-icon-upload input { position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+  .catalog-icon-delete { height:36px; padding:0 12px; border:1px solid #f3b8bb; border-radius:7px; color:#d83b42; background:#fff; font-family:inherit; font-size:13px; font-weight:650; cursor:pointer; }
+  .catalog-icon-delete:hover { border-color:#e86a70; background:#fff5f5; }
+  .catalog-icon-preview[hidden],.catalog-icon-placeholder[hidden],.catalog-icon-delete[hidden] { display:none; }
+  .catalog-modal.is-view .catalog-icon-actions { display:none; }
+  .catalog-image-search { position:relative; }
+
+  /* Upload */
+  .upload-group { display:flex; gap:10px; align-items:flex-start; }
+  .upload-group .form-input { flex:1; }
+  .upload-btn { height:40px; padding:0 18px; border:1px solid var(--primary); border-radius:8px; background:var(--surface); color:var(--primary); font-size:14px; font-weight:600; cursor:pointer; white-space:nowrap; display:inline-flex; align-items:center; gap:6px; }
+  .upload-btn:hover { background:var(--primary-light); }
+  .upload-file-list { margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; }
+  .upload-file-item { display:inline-flex; align-items:center; gap:6px; padding:4px 10px; background:#f0fdf4; border:1px solid #bbf7d0; border-radius:6px; font-size:12px; color:#166534; }
+  .upload-file-item .upload-file-name { max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .upload-file-item .upload-file-size { color:#6b7280; font-size:11px; }
+  .upload-file-item .upload-file-remove { cursor:pointer; color:#9ca3af; font-size:14px; line-height:1; border:none; background:none; padding:0; }
+  .upload-file-item .upload-file-remove:hover { color:#ef4444; }
+  .upload-warning { margin-top:6px; padding:8px 12px; background:#fffbeb; border:1px solid #fde68a; border-radius:6px; font-size:12px; color:#92400e; line-height:1.5; }
+
+  @media (max-width:1100px) { .catalog-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+  @media (max-width:900px) {
+    .main { padding:20px; }
+    .catalog-section-grid { grid-template-columns:1fr; }
+    .catalog-full-row { grid-column:auto; }
+    .catalog-field-wide { grid-column:auto; }
+    .catalog-modal .modal-body { padding:26px 24px; }
+    .catalog-modal .modal-header,.catalog-modal-footer { padding-left:24px; padding-right:24px; }
+    .instance-toolbar { flex-wrap:wrap; }
+    .instance-search { width:100%; }
+    .instance-control { flex:1 1 180px; }
+    .instance-delete-btn { margin-left:0; }
+  }
+  @media (max-width:600px) {
+    .sidebar { width:156px; }
+    .main { padding:12px; }
+    .catalog-workspace .toolbar { padding:12px; }
+    .catalog-search-wrap { width:100%; flex-basis:100%; }
+    .catalog-grid { grid-template-columns:1fr; }
+    .catalog-card { padding:14px; }
+    .catalog-meta { grid-template-columns:70px minmax(0,1fr); font-size:13px; }
+    .catalog-actions { gap:14px; }
+    #catalogModal { padding:8px; }
+    .catalog-modal { width:calc(100vw - 16px); max-height:calc(100vh - 16px); border-radius:14px; }
+    .catalog-modal .modal-header h3 { font-size:22px; }
+    .catalog-modal .modal-header { padding-top:20px; padding-bottom:18px; }
+    .catalog-modal-footer .btn { min-width:92px; height:50px; }
+  }
+
+  /* Model deployment screenshot replica */
+  #page-deploy .deploy-panel { padding:0; overflow:hidden; border:1px solid #e7ebf2; border-radius:16px; box-shadow:0 2px 12px rgba(31,45,61,.05); }
+  #page-deploy .deploy-toolbar { min-height:84px; padding:20px 24px; display:flex; align-items:center; gap:12px; border-bottom:1px solid #edf0f5; }
+  #page-deploy .deploy-search-wrap { position:relative; display:flex; align-items:center; }
+  #page-deploy .deploy-search-input { height:44px; width:220px; padding:0 36px 0 14px; border:1px solid #d5ddea; border-radius:8px; font-size:14px; color:#20242d; background:#fff; outline:none; }
+  #page-deploy .deploy-search-input:focus { border-color:#536df5; }
+  #page-deploy .deploy-search-input::placeholder { color:#99a4b5; }
+  #page-deploy .deploy-search-clear { position:absolute; right:6px; width:24px; height:24px; border:0; background:transparent; color:#99a4b5; font-size:18px; cursor:pointer; border-radius:4px; }
+  #page-deploy .deploy-search-clear:hover { background:#f0f2f5; color:#667085; }
+  #page-deploy .deploy-toolbar-spacer { flex:1; }
+  #page-deploy .deploy-batch-bar { display:flex; align-items:center; gap:10px; padding:10px 24px; background:#f0f4ff; border-bottom:1px solid #dce3f5; }
+  #page-deploy .deploy-batch-count { color:#344054; font-size:13px; font-weight:650; }
+  #page-deploy .deploy-batch-btn { height:34px; padding:0 16px; border:1px solid; border-radius:6px; font-size:13px; font-weight:650; cursor:pointer; transition:.15s; }
+  #page-deploy .deploy-batch-start { border-color:#9ecfff; background:#fff; color:#0c7fcf; }
+  #page-deploy .deploy-batch-start:hover { background:#f0f8ff; border-color:#4fa0f0; }
+  #page-deploy .deploy-batch-stop { border-color:#ffc9c9; background:#fff; color:#e5484d; }
+  #page-deploy .deploy-batch-stop:hover { background:#fff5f5; border-color:#f05252; }
+  #page-deploy .deploy-batch-delete { border-color:#e0e0e0; background:#fff; color:#666; }
+  #page-deploy .deploy-batch-delete:hover { background:#f5f5f5; border-color:#ccc; color:#e5484d; }
+  #page-deploy .deploy-resource-filter,
+  #page-deploy .deploy-reset {
+    height:44px; border:1px solid #d5ddea; border-radius:8px; background:#fff; color:#344054;
+    font:600 15px/1.2 inherit;
+  }
+  #page-deploy .deploy-resource-filter { min-width:165px; padding:0 42px 0 16px; cursor:pointer; }
+  #page-deploy .deploy-reset { padding:0 18px; display:inline-flex; align-items:center; gap:7px; cursor:pointer; }
+  #page-deploy .deploy-reset:hover { border-color:#9eacf8; color:#4169f6; }
+  #page-deploy .deploy-reset svg { width:17px; height:17px; }
+  #page-deploy .deploy-sort-th { user-select:none; }
+  #page-deploy .deploy-sort-th-inner { cursor:pointer; }
+  #page-deploy .deploy-sort-th-inner:hover { color:#4169f6; }
+  #page-deploy .deploy-sort-arrow { color:#99a4b5; font-size:11px; }
+  #page-deploy .deploy-expand-all-btn {
+    width:22px; height:22px; padding:0; margin-right:4px; border:1px solid #d5ddea; border-radius:4px;
+    background:#fff; color:#667085; font-size:13px; cursor:pointer; vertical-align:middle; line-height:1;
+  }
+  #page-deploy .deploy-expand-all-btn:hover { background:#f0f4ff; color:#4169f6; border-color:#9eacf8; }
+  #page-deploy .deploy-create-btn { height:44px; padding:0 20px; border:0; border-radius:9px; font-size:15px; font-weight:700; background:linear-gradient(135deg,#4168f6,#5b63ed); box-shadow:0 5px 12px rgba(65,104,246,.18); }
+  #page-deploy .deploy-table-wrap { width:100%; overflow-x:auto; }
+  #page-deploy .deploy-table { min-width:1160px; table-layout:fixed; border-collapse:separate; border-spacing:0; color:#354052; font-size:15px; }
+  #page-deploy .deploy-table col:nth-child(1) { width:78px; }
+  #page-deploy .deploy-table col:nth-child(2) { width:31%; }
+  #page-deploy .deploy-table col:nth-child(3) { width:15%; }
+  #page-deploy .deploy-table col:nth-child(4) { width:22%; }
+  #page-deploy .deploy-table col:nth-child(5) { width:11%; }
+  #page-deploy .deploy-table col:nth-child(6) { width:18%; }
+  #page-deploy .deploy-table col:nth-child(7) { width:92px; }
+  #page-deploy .deploy-table th { height:54px; padding:0 14px; background:#fafbfc; border-bottom:1px solid #e8ecf2; color:#667085; font-size:14px; font-weight:650; white-space:nowrap; }
+  #page-deploy .deploy-table td { height:58px; padding:0 14px; border-bottom:1px solid #edf0f4; background:#fff; vertical-align:middle; }
+  #page-deploy .deploy-table tr:hover td { background:#fbfcff; }
+  #page-deploy .deploy-table input[type="checkbox"] { width:17px; height:17px; margin:0; accent-color:#536df5; cursor:pointer; }
+  #page-deploy .deploy-select-cell { text-align:center; }
+  #page-deploy .deploy-name-line { min-width:0; display:flex; align-items:center; gap:10px; }
+  #page-deploy .deploy-parent-name { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#20242d; font-weight:750; }
+  #page-deploy .deploy-child-name { padding-left:34px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#354052; }
+  #page-deploy .deploy-chevron { width:20px; height:24px; padding:0; border:0; background:transparent; color:#687386; font-size:20px; line-height:1; cursor:pointer; transition:transform .15s; }
+  #page-deploy .deploy-chevron.closed { transform:rotate(-90deg); }
+  #page-deploy .deploy-type-tag { display:inline-flex; align-items:center; height:28px; padding:0 10px; border-radius:6px; background:#eef3ff; color:#4b6ff2; font-size:13px; font-weight:650; white-space:nowrap; }
+  #page-deploy .deploy-type-tag.speech { background:#ecf9ef; color:#12a04a; }
+  #page-deploy .deploy-source { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:#657084; font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:14px; }
+  #page-deploy .deploy-replicas { color:#20242d; font-weight:750; }
+  #page-deploy .deploy-status { display:inline-flex; align-items:center; height:30px; padding:0 12px; border-radius:16px; font-size:14px; font-weight:700; white-space:nowrap; }
+  #page-deploy .deploy-status.pending { background:#edf5ff; color:#1769dd; }
+  #page-deploy .deploy-status.running { background:#eaf8ef; color:#0c9d42; }
+  #page-deploy .deploy-actions { display:flex; align-items:center; justify-content:center; gap:8px; }
+  #page-deploy .deploy-icon-btn { width:28px; height:32px; padding:0; display:inline-flex; align-items:center; justify-content:center; border:0; background:transparent; color:#98a3b3; font-size:21px; cursor:pointer; border-radius:6px; }
+  #page-deploy .deploy-icon-btn svg { width:18px; height:18px; }
+  #page-deploy .deploy-icon-btn:hover { background:#f2f5fa; color:#536df5; }
+  #page-deploy .deploy-icon-btn.danger { color:#ff3b41; }
+  #page-deploy .deploy-icon-btn.danger:hover { background:#fff1f1; color:#e92d34; }
+  #page-deploy .deploy-child-row[hidden] { display:none; }
+  #page-deploy .replicas-stepper { display:inline-flex; align-items:center; gap:0; border:1px solid #dce2ec; border-radius:5px; overflow:hidden; background:#fff; vertical-align:middle; }
+  #page-deploy .replicas-stepper button { width:22px; height:24px; padding:0; border:0; background:#f8fafc; color:#667085; font:700 14px/1 inherit; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+  #page-deploy .replicas-stepper button:hover { background:#f0f4ff; color:#4169f6; }
+  #page-deploy .replicas-stepper button:disabled { color:#c3cad5; background:#f6f7f9; cursor:not-allowed; }
+  #page-deploy .replicas-stepper .rs-val { min-width:28px; text-align:center; color:#20242d; font-size:12px; font-weight:600; padding:0 1px; white-space:nowrap; }
+  #page-deploy .replicas-stepper .rs-sep { color:#c3cad5; }
+  #page-deploy .replicas-stepper .rs-btn-max { color:#c3cad5; background:#f6f7f9; cursor:not-allowed; }
+  #page-deploy .replicas-stepper .rs-confirm,
+  #page-deploy .replicas-stepper .rs-cancel { width:22px; height:24px; padding:0; border:0; font:700 13px/1 inherit; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; }
+  #page-deploy .replicas-stepper .rs-confirm { background:#eaf8ef; color:#0c9d42; border-radius:0; }
+  #page-deploy .replicas-stepper .rs-confirm:hover { background:#d2f0dd; }
+  #page-deploy .replicas-stepper .rs-cancel { background:#fff1f1; color:#e5484d; border-radius:0 5px 5px 0; }
+  #page-deploy .replicas-stepper .rs-cancel:hover { background:#ffe0e0; }
+
+  #deployModal { align-items:center; padding:20px; overflow:hidden; background:rgba(31,38,49,.48); }
+  #deployModal .deploy-modal { width:min(640px,calc(100vw - 32px)); max-height:calc(100vh - 40px); overflow:hidden; display:flex; flex-direction:column; border-radius:14px; box-shadow:0 20px 60px rgba(15,23,42,.26); }
+  #deployModal .deploy-modal-header { flex:0 0 auto; min-height:auto; padding:16px 24px; position:static; border-bottom:1px solid #edf0f4; border-radius:14px 14px 0 0; }
+  #deployModal .deploy-modal-header h3 { color:#20242d; font-size:17px; line-height:1.3; font-weight:700; }
+  #deployModal .modal-close { width:28px; height:28px; color:#9aa4b3; font-size:22px; font-weight:400; }
+  #deployModal .deploy-modal-body { flex:1 1 auto; overflow-y:auto; padding:0 24px 20px; }
+  #deployModal .form-group { margin-bottom:14px; }
+  #deployModal .form-label { margin-bottom:5px; color:#344054; font-size:13px; font-weight:700; }
+  #deployModal .form-label .req { margin:0 4px 0 0; }
+  #deployModal .form-input,
+  #deployModal .form-select,
+  #deployModal .form-textarea { height:38px; padding:0 12px; border:1px solid #d5ddea; border-radius:7px; color:#20242d; font-size:14px; }
+  #deployModal .form-input::placeholder,
+  #deployModal .form-textarea::placeholder { color:#9299a3; }
+  #deployModal .form-input[readonly] { background:#f6f8fb; color:#667085; cursor:not-allowed; }
+  #deployModal .form-textarea { height:68px; padding-top:10px; resize:none; }
+  #deployModal .form-hint { display:block; margin-top:4px; color:#99a4b5; font-size:12px; line-height:1.45; }
+  #deployModal .deploy-form-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  #deployModal .deploy-stepper { height:38px; display:grid; grid-template-columns:44px 1fr 44px; overflow:hidden; border:1px solid #d5ddea; border-radius:7px; background:#fff; }
+  #deployModal .deploy-stepper button { border:0; background:#f8fafc; color:#667085; font:700 18px/1 inherit; cursor:pointer; }
+  #deployModal .deploy-stepper button:first-child { border-right:1px solid #d5ddea; }
+  #deployModal .deploy-stepper button:last-child { border-left:1px solid #d5ddea; }
+  #deployModal .deploy-stepper button:hover { background:#f0f4ff; color:#4169f6; }
+  #deployModal .deploy-stepper button:disabled { color:#c3cad5; background:#f6f7f9; cursor:not-allowed; }
+  #deployModal .deploy-stepper output { display:flex; align-items:center; justify-content:center; color:#20242d; font-size:15px; }
+  #deployModal .deploy-replica-limit { display:block; margin-top:5px; color:#e5484d; font-size:12px; line-height:1.45; }
+  #deployModal .deploy-advanced { margin-top:20px; overflow:hidden; border:1px solid #dce2ec; border-radius:8px; background:#fff; }
+  #deployModal .deploy-advanced-trigger { width:100%; min-height:40px; padding:0 16px; display:flex; align-items:center; gap:10px; border:0; background:linear-gradient(180deg,#fafbfd,#f6f8fb); color:#344054; font:700 13px/1.3 inherit; text-align:left; cursor:pointer; }
+  #deployModal .deploy-advanced-trigger .collapse-arrow { color:#677386; font-size:18px; transform:rotate(0); }
+  #deployModal .deploy-advanced-trigger .collapse-arrow.open { transform:rotate(90deg); }
+  #deployModal .deploy-advanced-body { padding:14px 16px 4px; }
+  #deployModal .deploy-advanced-body > .form-group,
+  #deployModal .deploy-advanced-body > .deploy-form-row { padding:0 0; margin-left:0; margin-right:0; }
+  #deployModal .deploy-advanced-body .form-label { font-size:13px; }
+  #deployModal .deploy-env-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:10px; }
+  #deployModal .deploy-add-link { padding:2px 0; border:0; background:transparent; color:#476cf1; font:650 13px/1.4 inherit; cursor:pointer; }
+  #deployModal .deploy-add-link:hover { color:#2f53dc; }
+  #deployModal .deploy-checkbox { display:flex; align-items:center; gap:10px; color:#344054; font-size:13px; font-weight:650; cursor:pointer; }
+  #deployModal .deploy-checkbox input { width:18px; height:18px; margin:0; accent-color:#536df5; }
+  #deployModal .deploy-modal-footer { flex:0 0 auto; min-height:auto; padding:14px 24px; position:static; border-top:1px solid #edf0f4; border-radius:0 0 14px 14px; background:rgba(255,255,255,.98); }
+  #deployModal .deploy-modal-footer .btn { min-width:100px; height:38px; justify-content:center; border-radius:7px; font-size:14px; font-weight:700; }
+  #deployModal .deploy-modal-footer .btn-primary { min-width:140px; border:0; background:linear-gradient(135deg,#4168f6,#5668ed); }
+
+  @media (max-width:900px) {
+    .catalog-form-grid { grid-template-columns:1fr; }
+    .catalog-full-row { grid-column:auto; }
+    #deployModal .deploy-form-row { grid-template-columns:1fr; gap:0; }
+    #deployModal .deploy-modal-header { padding:14px 18px; }
+    #deployModal .deploy-modal-body { padding:0 18px 16px; }
+    #deployModal .deploy-modal-footer { padding:10px 18px; }
+  }
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar -->
+  <div class="sidebar">
+    <div class="sidebar-logo"><span class="dot"></span> MaaS平台</div>
+    <div class="sidebar-group open" id="nav-models-group">
+      <div class="sidebar-group-header" onclick="toggleSidebarGroup('nav-models-group')">
+        <span>模型管理</span><span class="arrow">›</span>
+      </div>
+      <div class="sidebar-group-body">
+        <div class="sidebar-sub-item active" id="nav-catalog" onclick="navTo('catalog')">模型库</div>
+        <div class="sidebar-sub-item" id="nav-deploy" onclick="navTo('deploy')">模型部署</div>
+        <div class="sidebar-sub-item" id="nav-instances" onclick="navTo('instances')">模型实例</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+
+    <!-- ==================== PAGE 1: 模型库管理 ==================== -->
+    <div class="page active" id="page-catalog">
+      <div class="breadcrumb">模型管理 / 模型库</div>
+      <div class="catalog-workspace">
+        <div class="toolbar">
+          <div class="catalog-search-wrap">
+            <svg class="catalog-search-icon" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"></circle><path d="m15.5 15.5 5 5"></path></svg>
+            <input class="search-box" id="catalogSearch" placeholder="搜索模型名称..." oninput="handleCatalogSearchInput()">
+            <button class="catalog-search-clear" id="catalogSearchClear" aria-label="清空搜索词" hidden type="button" onclick="clearCatalogSearch()">×</button>
+          </div>
+          <select class="filter-select" id="catalogCategory" onchange="renderCatalogCards()"><option value="">全部类型</option><option>通用大模型</option><option>嵌入模型</option><option>图片模型</option><option>重排模型</option><option>语音识别模型</option><option>语音合成模型</option></select>
+          <select class="filter-select" id="catalogDeveloper" onchange="renderCatalogCards()"><option value="">全部开发者</option><option>智谱</option><option>千问</option><option>DeepSeek</option></select>
+          <button class="catalog-reset-btn" type="button" onclick="resetCatalogFilter()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v6h6"/></svg><span>重置</span>
+          </button>
+          <span class="spacer"></span>
+          <button class="btn btn-primary" onclick="showCatalogModal('add')">＋ 新建模型</button>
+        </div>
+        <div class="catalog-grid" id="catalogGrid"></div>
+        <div class="catalog-empty" id="catalogEmpty">暂无符合条件的模型</div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE 2: 部署模型 ==================== -->
+    <div class="page" id="page-deploy">
+      <div class="breadcrumb">模型管理 / 部署模型</div>
+      <div class="card deploy-panel">
+        <div class="deploy-toolbar">
+          <div class="deploy-search-wrap">
+            <input class="deploy-search-input" id="deploySearch" placeholder="搜索模型名称..." oninput="renderDeployments()">
+            <button class="deploy-search-clear" id="deploySearchClear" type="button" aria-label="清空" onclick="clearDeploySearch()" hidden>×</button>
+          </div>
+          <select class="deploy-resource-filter" id="deployCategoryFilter" aria-label="模型分类筛选" onchange="renderDeployments()">
+            <option value="">全部分类</option>
+            <option>通用大模型</option>
+            <option>嵌入模型</option>
+            <option>图片模型</option>
+            <option>重排模型</option>
+            <option>语音识别模型</option>
+            <option>语音合成模型</option>
+          </select>
+          <select class="deploy-resource-filter" id="deployStatusFilter" aria-label="状态筛选" onchange="renderDeployments()">
+            <option value="">全部状态</option>
+            <option value="running">已启用</option>
+            <option value="stopped">已停用</option>
+            <option value="pending">未就绪</option>
+          </select>
+          <select class="deploy-resource-filter" id="deployResourceFilter" aria-label="资源组筛选" onchange="renderDeployments()">
+            <option value="">全部资源组</option>
+            <option>测试1</option>
+            <option>GPU-Cluster-Prod</option>
+          </select>
+          <button class="deploy-reset" type="button" onclick="resetDeployFilter()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v6h6"/></svg><span>重置</span>
+          </button>
+          <span class="deploy-toolbar-spacer"></span>
+          <button class="btn btn-primary deploy-create-btn" onclick="showDeployModal('add')">＋ <span>新建部署</span></button>
+        </div>
+        <div class="deploy-batch-bar" id="deployBatchBar" style="display:none">
+          <span class="deploy-batch-count" id="deployBatchCount">已选 0 项</span>
+          <button class="deploy-batch-btn deploy-batch-start" type="button" onclick="batchStartDeployments()">▶ 一键启动</button>
+          <button class="deploy-batch-btn deploy-batch-stop" type="button" onclick="batchStopDeployments()">■ 批量停止</button>
+          <button class="deploy-batch-btn deploy-batch-delete" type="button" onclick="batchDeleteDeployments()">⌫ 批量删除</button>
+        </div>
+        <div class="deploy-table-wrap">
+          <table class="deploy-table">
+            <colgroup><col><col><col><col><col><col><col></colgroup>
+            <thead><tr><th class="deploy-select-cell"><input type="checkbox" id="deploySelectAll" aria-label="全选部署" onchange="toggleAllDeployments(this.checked)"></th><th class="deploy-sort-th"><button class="deploy-expand-all-btn" id="deployExpandAllBtn" type="button" onclick="toggleAllDeployGroups()" title="展开/收起全部">⊞</button><span class="deploy-sort-th-inner" data-sort="name" onclick="sortDeployments('name')">名称 <span class="deploy-sort-arrow" id="deploySortArrow-name"> ↕</span></span></th><th class="deploy-sort-th"><span class="deploy-sort-th-inner" data-sort="resourceGroup" onclick="sortDeployments('resourceGroup')">资源组 <span class="deploy-sort-arrow" id="deploySortArrow-resourceGroup"> ↕</span></span></th><th class="deploy-sort-th"><span class="deploy-sort-th-inner" data-sort="source" onclick="sortDeployments('source')">来源 <span class="deploy-sort-arrow" id="deploySortArrow-source"> ↕</span></span></th><th class="deploy-sort-th"><span class="deploy-sort-th-inner" data-sort="replicas" onclick="sortDeployments('replicas')">实例数 <span class="deploy-sort-arrow" id="deploySortArrow-replicas"> ↕</span></span></th><th class="deploy-sort-th"><span class="deploy-sort-th-inner" data-sort="createdAt" onclick="sortDeployments('createdAt')">创建时间 <span class="deploy-sort-arrow" id="deploySortArrow-createdAt"> ↕</span></span></th><th>操作</th></tr></thead>
+            <tbody id="deployTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ==================== PAGE 3: 模型实例 ==================== -->
+    <div class="page" id="page-instances">
+      <div class="breadcrumb">模型管理 / 模型实例</div>
+      <section class="instance-workspace">
+        <div class="instance-toolbar">
+          <label class="instance-search" aria-label="按名称搜索">
+            <span aria-hidden="true">⌕</span>
+            <input id="instanceSearch" placeholder="名称搜索" oninput="renderModelInstances()">
+          </label>
+          <select id="instanceResourceGroup" class="instance-control" onchange="renderModelInstances()" aria-label="资源组筛选">
+            <option value="">全部资源组</option>
+            <option value="测试1">测试1</option>
+            <option value="公共组">公共组</option>
+          </select>
+          <select id="instanceNode" class="instance-control" onchange="renderModelInstances()" aria-label="节点筛选">
+            <option value="">全部节点</option>
+            <option value="node-01">node-01</option>
+            <option value="node-02">node-02</option>
+            <option value="node-03">node-03</option>
+          </select>
+          <select id="instanceStatus" class="instance-control" onchange="renderModelInstances()" aria-label="状态筛选">
+            <option value="">全部状态</option>
+            <option value="pending">待处理</option>
+            <option value="error">异常</option>
+            <option value="running">运行中</option>
+          </select>
+          <button class="instance-reset-btn" type="button" onclick="resetInstanceFilter()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v6h6"/></svg><span>重置</span>
+          </button>
+          <button class="instance-delete-btn" id="instanceBatchDelete" type="button" onclick="deleteSelectedInstances()">⌫&nbsp; 删除(<span id="instanceSelectedCount">10</span>)</button>
+        </div>
+        <div class="instance-table-wrap">
+          <table class="instance-table">
+            <thead>
+              <tr>
+                <th><input id="instanceSelectAll" type="checkbox" checked onchange="toggleAllInstances(this.checked)" aria-label="选择全部实例"></th>
+                <th>名称 ↕</th><th>资源组 ↕</th><th>节点 ↕</th><th>分配显存 ↕</th><th>状态</th><th>创建时间 ↕</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="instanceTableBody"></tbody>
+          </table>
+        </div>
+        <div class="instance-pagination">
+          <span id="instanceTotal">共 10 条</span>
+          <select class="instance-page-size" aria-label="每页条数"><option>10条/页</option></select>
+          <button class="instance-page-btn" type="button" disabled>‹</button>
+          <button class="instance-page-btn active" type="button">1</button>
+          <button class="instance-page-btn" type="button" disabled>›</button>
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 模型实例日志弹窗 ===== -->
+<div class="modal-overlay" id="instanceLogModal" role="dialog" aria-modal="true" aria-labelledby="instanceLogTitle">
+  <div class="instance-log-dialog">
+    <div class="instance-log-header">
+      <h3 class="instance-log-title" id="instanceLogTitle">查看日志</h3>
+      <button class="instance-log-close" type="button" onclick="hideInstanceLogs()" aria-label="关闭日志">×</button>
+    </div>
+    <div class="instance-log-body">
+      <pre class="instance-log-console" id="instanceLogContent"></pre>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 新增/编辑模型弹窗 ===== -->
+<div class="modal-overlay" id="catalogModal">
+  <div class="catalog-modal" id="catalogModalPanel">
+    <div class="modal-header">
+      <h3 id="modalTitle">新建模型</h3>
+      <button class="modal-close" onclick="hideCatalogModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="catalog-form-grid catalog-compact-grid">
+        <div class="form-group">
+          <label class="form-label"><span class="req">*</span>模型名称</label>
+          <input class="form-input" placeholder="如 Qwen3-8B" id="mName" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span class="req">*</span>开发者</label>
+          <input class="form-input" id="mDeveloper" type="text" placeholder="请输入开发者，如 DeepSeek" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span class="req">*</span>参数量（B）</label>
+          <input class="form-input" id="mSize" type="number" placeholder="如 8.0" min="0" step="0.1" required>
+          <span class="form-hint">保留 1 位小数</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span class="req">*</span>图标</label>
+          <div class="catalog-icon-field">
+            <div class="catalog-icon-display">
+              <span class="catalog-icon-placeholder" id="mIconPlaceholder" aria-label="默认图片图标">
+                <svg class="catalog-icon-default-art" viewBox="0 0 64 64" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="7" y="5" width="50" height="50" rx="7"></rect>
+                  <circle cx="21" cy="19" r="5"></circle>
+                  <path d="M8 42c7-7 13-11 20-10 4 .5 7 2.4 10 1.3 6-2.3 10-8.2 19-8.8"></path>
+                  <path d="M25 55c-.5-11 3.5-18.5 13-21.7"></path>
+                </svg>
+              </span>
+              <img class="catalog-icon-preview" id="mIconPreview" alt="模型图标预览" hidden>
+            </div>
+            <div class="catalog-icon-actions">
+              <div class="catalog-icon-action-buttons">
+                <label class="catalog-icon-upload"><span id="catalogIconUploadText">上传本地图片</span>
+                  <input id="mIcon" type="file" accept="image/png,image/jpeg,image/svg+xml" onchange="handleCatalogIconUpload(this)">
+                </label>
+                <button class="catalog-icon-delete" id="catalogIconDelete" type="button" onclick="clearCatalogIcon()" hidden>删除</button>
+              </div>
+              <span class="catalog-icon-action-hint">支持 PNG、JPG、SVG，最大 5 MB</span>
+            </div>
+          </div>
+        </div>
+        <div class="form-group catalog-full-row">
+          <label class="form-label"><span class="req">*</span>模型类型</label>
+          <div class="type-checks" id="catalogTypeOptions">
+            <label class="type-check"><input type="checkbox" value="通用大模型">通用大模型</label>
+            <label class="type-check"><input type="checkbox" value="嵌入模型">嵌入模型</label>
+            <label class="type-check"><input type="checkbox" value="图片模型">图片模型</label>
+            <label class="type-check"><input type="checkbox" value="重排模型">重排模型</label>
+            <label class="type-check"><input type="checkbox" value="语音识别模型">语音识别模型</label>
+            <label class="type-check"><input type="checkbox" value="语音合成模型">语音合成模型</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span class="req">*</span>模型权重地址</label>
+          <input class="form-input" id="mWeight" placeholder="如 /models/Qwen3-8B" required>
+          <span class="form-hint">NFS 共享盘权重文件路径</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label"><span class="req">*</span>模型镜像地址</label>
+          <div class="catalog-image-search">
+            <input class="form-input" id="mImage" list="catalogImageOptions" placeholder="搜索或输入 Harbor 镜像地址" autocomplete="off" required>
+            <datalist id="catalogImageOptions">
+              <option value="harbor.xxx.com/lm/vllm:v0.12.0"></option>
+              <option value="harbor.xxx.com/lm/vllm:v0.11.0"></option>
+              <option value="harbor.xxx.com/lm/sglang:v0.4.0"></option>
+              <option value="harbor.xxx.com/lm/vllm:deepseek-v3"></option>
+              <option value="harbor.xxx.com/lm/embedding:v3"></option>
+            </datalist>
+          </div>
+          <span class="form-hint">输入关键字可搜索 Harbor 镜像，也可直接粘贴完整地址</span>
+        </div>
+        <div class="form-group catalog-full-row">
+          <label class="form-label">简介</label>
+          <textarea class="form-textarea" id="mDescription" maxlength="500" placeholder="模型简介，最长 500 字"></textarea>
+        </div>
+        <div class="catalog-form-error catalog-full-row" id="catalogFormError"></div>
+      </div>
+    </div>
+    <div class="catalog-modal-footer">
+      <button class="btn" onclick="hideCatalogModal()">取消</button>
+      <button class="btn btn-primary" id="catalogSaveButton" onclick="saveCatalogModel()">确认</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 新建/编辑部署弹窗 ===== -->
+<div class="modal-overlay" id="deployModal">
+  <div class="modal deploy-modal">
+    <div class="modal-header deploy-modal-header">
+      <h3 id="deployModalTitle">新建部署</h3>
+      <button class="modal-close" type="button" aria-label="关闭" onclick="hideDeployModal()">×</button>
+    </div>
+    <div class="modal-body deploy-modal-body">
+      <div class="form-group">
+        <label class="form-label"><span class="req">*</span>名称（选择模型）</label>
+        <select class="form-select" id="deployName" onchange="onDeployModelSelect(this.value)">
+          <option value="">-- 请选择模型库中的模型 --</option>
+        </select>
+        <span class="form-hint">从模型库中选择已有模型，自动加载基础信息</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span class="req">*</span>模型路径（权重地址）</label>
+        <input class="form-input" placeholder="选择模型后自动带入" id="deployModelPath" readonly>
+        <span class="form-hint">来自模型库中的模型权重地址，不可修改</span>
+      </div>
+      <div class="form-group">
+        <label class="form-label"><span class="req">*</span>模型镜像地址</label>
+        <input class="form-input" placeholder="选择模型后自动带入" id="bkVersion" readonly>
+        <span class="form-hint">来自新建模型时选择的镜像地址，不可修改</span>
+      </div>
+      <div class="deploy-form-row">
+        <div class="form-group">
+          <label class="form-label"><span class="req">*</span>资源组</label>
+          <select class="form-select" id="deployResourceGroup" onchange="updateDeployReplicaLimit()"><option>推理组</option><option>测试1</option><option>GPU-Cluster-Prod</option></select>
+          <span class="form-hint">选择目标资源组，后端 GPU 选项显示该组内可用 GPU</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">实例数</label>
+          <div class="deploy-stepper">
+            <button type="button" onclick="changeDeployReplicas(-1)" aria-label="减少实例数">−</button>
+            <output id="deployReplicaCount">1</output>
+            <button id="deployReplicaIncrease" type="button" onclick="changeDeployReplicas(1)" aria-label="增加实例数">＋</button>
+          </div>
+          <span class="deploy-replica-limit" id="deployReplicaLimit">该资源组的剩余资源最多可部署<span id="deployReplicaMax">4</span> 个实例</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">备注</label>
+        <textarea class="form-textarea" id="deployRemark" aria-label="备注"></textarea>
+      </div>
+      <div class="deploy-advanced">
+        <button class="deploy-advanced-trigger" id="deployAdvancedTrigger" type="button" aria-expanded="false" aria-controls="deployAdvancedBody" onclick="toggleDeployAdvanced()">
+          <span class="collapse-arrow" id="deployAdvancedArrow">›</span>
+          <span>高级配置</span>
+        </button>
+        <div id="deployAdvancedBody" class="deploy-advanced-body collapse-body">
+          <div class="form-group">
+            <label class="form-label" for="deployPlacementStrategy">放置策略</label>
+            <select class="form-select" id="deployPlacementStrategy">
+              <option value="free">自由调度</option>
+              <option value="balanced">平均分配</option>
+            </select>
+            <span class="form-hint">自由调度：优先匹配可用资源，减少 GPU/节点上的资源碎片；平均分配：尽量将实例分散到不同节点，可能会在单个节点上产生较多资源碎片。</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer deploy-modal-footer">
+      <button class="btn" type="button" onclick="hideDeployModal()">取消</button>
+      <button class="btn btn-primary" type="button" onclick="handleDeploy()">确认部署</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#059669;color:#fff;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:500;opacity:0;transition:opacity .3s;z-index:1000;pointer-events:none;"></div>
+
+<script>
+// ==== Navigation ====
+function navTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+
+  // Sidebar
+  document.querySelectorAll('.sidebar-sub-item').forEach(function(s) { s.classList.remove('active'); });
+  var subNavId = 'nav-' + page;
+  var subNav = document.getElementById(subNavId);
+  if (subNav) subNav.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+function toggleSidebarGroup(groupId) {
+  document.getElementById(groupId).classList.toggle('open');
+}
+
+// ==== Model instances ====
+window.modelInstances = [
+  { id:'mi-01', name:'qwen3.6-27b-X1xEx', runtime:'vLLM', resourceGroup:'测试1', node:'—', memory:'0', status:'pending', created:'2026-07-02 16:36:21', selected:true },
+  { id:'mi-02', name:'qwen3.6-27b-ZDRSg', runtime:'vLLM', resourceGroup:'测试1', node:'—', memory:'0', status:'pending', created:'2026-06-30 16:39:02', selected:true },
+  { id:'mi-03', name:'qwen3.6-27b-2ejux', runtime:'vLLM', resourceGroup:'测试1', node:'—', memory:'0', status:'pending', created:'2026-06-30 14:17:42', selected:true },
+  { id:'mi-04', name:'demo-whisper-large-v3-r1', runtime:'AceBound:1.0', resourceGroup:'测试1', node:'—', memory:'0', status:'pending', created:'2026-06-30 14:10:36', selected:true },
+  { id:'mi-05', name:'mimo-v2.5-jG5kP', runtime:'vLLM', resourceGroup:'测试1', node:'—', memory:'0', status:'pending', created:'2026-06-30 13:10:54', selected:true },
+  { id:'mi-06', name:'mimo-v2.5-mYXMr', runtime:'vLLM', resourceGroup:'测试1', node:'—', memory:'0', status:'pending', created:'2026-06-30 13:10:54', selected:true },
+  { id:'mi-07', name:'demo-deepseek-r1-70b-r2', runtime:'SGLang:0.4.0', resourceGroup:'测试1', node:'—', memory:'144 GiB', status:'error', created:'2026-06-30 12:22:36', selected:true },
+  { id:'mi-08', name:'mimo-v2.5-ZvuDW', runtime:'vLLM', resourceGroup:'测试1', node:'—', memory:'0', status:'pending', created:'2026-06-30 13:10:55', selected:true },
+  { id:'mi-09', name:'glm-4-flash-prod-a1b2c', runtime:'vLLM', resourceGroup:'公共组', node:'—', memory:'80 GiB', status:'running', created:'2026-06-24 10:05:00', selected:true },
+  { id:'mi-10', name:'qwen3.6-27b-Q8pLm', runtime:'vLLM', resourceGroup:'测试1', node:'—', memory:'0', status:'pending', created:'2026-06-23 18:42:17', selected:true }
+];
+
+function escapeInstanceHtml(value) {
+  return String(value).replace(/[&<>"']/g,function(char) {
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char];
+  });
+}
+
+function instanceStatusBadge(status) {
+  var label = status === 'running' ? '运行中' : status === 'error' ? '异常' : '待处理';
+  return '<span class="instance-status '+status+'">'+label+'</span>';
+}
+
+function renderModelInstances() {
+  var tbody = document.getElementById('instanceTableBody');
+  if (!tbody) return;
+  var search = document.getElementById('instanceSearch').value.trim().toLowerCase();
+  var resourceGroup = document.getElementById('instanceResourceGroup').value;
+  var status = document.getElementById('instanceStatus').value;
+  var node = document.getElementById('instanceNode').value;
+  var rows = window.modelInstances.filter(function(instance) {
+    return (!search || instance.name.toLowerCase().indexOf(search) > -1) &&
+      (!resourceGroup || instance.resourceGroup === resourceGroup) &&
+      (!status || instance.status === status) &&
+      (!node || instance.node === node);
+  });
+  tbody.innerHTML = rows.length ? rows.map(function(instance) {
+    return '<tr>'+
+      '<td><input class="instance-row-check" type="checkbox" '+(instance.selected?'checked':'')+' onchange="updateInstanceSelection(\''+instance.id+'\',this.checked)" aria-label="选择 '+escapeInstanceHtml(instance.name)+'"></td>'+
+      '<td><div class="instance-name">'+escapeInstanceHtml(instance.name)+'</div><div class="instance-runtime"># '+escapeInstanceHtml(instance.runtime)+'</div></td>'+
+      '<td>'+escapeInstanceHtml(instance.resourceGroup)+'</td>'+
+      '<td class="instance-node">'+escapeInstanceHtml(instance.node)+'</td>'+
+      '<td class="instance-memory">'+escapeInstanceHtml(instance.memory)+'</td>'+
+      '<td>'+instanceStatusBadge(instance.status)+'</td>'+
+      '<td>'+escapeInstanceHtml(instance.created)+'</td>'+
+      '<td><div class="instance-actions"><button class="instance-action" type="button" onclick="showInstanceLogs(\''+instance.id+'\')">查看日志</button><button class="instance-action" type="button" onclick="downloadInstanceLogsPdf(\''+instance.id+'\')">下载日志</button></div></td>'+
+      '</tr>';
+  }).join('') : '<tr><td class="instance-empty" colspan="8">未找到符合条件的模型实例</td></tr>';
+  document.getElementById('instanceTotal').textContent = '共 '+rows.length+' 条';
+  updateInstanceSelectionSummary();
+}
+
+function updateInstanceSelectionSummary() {
+  var count = window.modelInstances.filter(function(instance) { return instance.selected; }).length;
+  document.getElementById('instanceSelectedCount').textContent = count;
+  var selectAll = document.getElementById('instanceSelectAll');
+  selectAll.checked = window.modelInstances.length > 0 && count === window.modelInstances.length;
+  selectAll.indeterminate = count > 0 && count < window.modelInstances.length;
+}
+
+function updateInstanceSelection(id, checked) {
+  var instance = window.modelInstances.find(function(item) { return item.id === id; });
+  if (instance) instance.selected = checked;
+  updateInstanceSelectionSummary();
+}
+
+function toggleAllInstances(checked) {
+  window.modelInstances.forEach(function(instance) { instance.selected = checked; });
+  renderModelInstances();
+}
+
+function deleteSelectedInstances() {
+  var selected = window.modelInstances.filter(function(instance) { return instance.selected; });
+  if (!selected.length) return;
+  if (!window.confirm('确认删除选中的 '+selected.length+' 个模型实例？')) return;
+  window.modelInstances = window.modelInstances.filter(function(instance) { return !instance.selected; });
+  renderModelInstances();
+}
+
+function resetInstanceFilter() {
+  document.getElementById('instanceSearch').value = '';
+  document.getElementById('instanceResourceGroup').value = '';
+  document.getElementById('instanceStatus').value = '';
+  document.getElementById('instanceNode').value = '';
+  renderModelInstances();
+}
+
+function getInstanceLog(instance) {
+  if (instance.status === 'pending') return 'Model instance not assigned to a worker';
+  if (instance.status === 'error') return [
+    '[2026-06-30 12:22:36 INFO] Starting SGLang runtime 0.4.0',
+    '[2026-06-30 12:22:37 INFO] Resolving model artifacts',
+    '[2026-06-30 12:22:41 ERROR] Failed to allocate 144 GiB GPU memory',
+    '[2026-06-30 12:22:41 ERROR] No eligible worker satisfies the resource request',
+    '[2026-06-30 12:22:42 INFO] Model instance stopped'
+  ].join('\n');
+  return [
+    '[2026-06-24 10:05:00 INFO] Starting vLLM engine',
+    '[2026-06-24 10:05:03 INFO] Loading model weights from shared storage',
+    '[2026-06-24 10:05:19 INFO] Allocated 80 GiB GPU memory',
+    '[2026-06-24 10:05:21 INFO] Model loaded successfully',
+    '[2026-06-24 10:05:21 INFO] Listening on 0.0.0.0:8000'
+  ].join('\n');
+}
+
+function showInstanceLogs(id) {
+  var instance = window.modelInstances.find(function(item) { return item.id === id; });
+  if (!instance) return;
+  document.getElementById('instanceLogContent').textContent = getInstanceLog(instance);
+  document.getElementById('instanceLogModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function hideInstanceLogs() {
+  document.getElementById('instanceLogModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function escapePdfText(value) {
+  return String(value).replace(/[^\x20-\x7E]/g,'?').replace(/([\\()])/g,'\\$1');
+}
+
+function buildLogPdf(instance, logText) {
+  var lines = [
+    'Model Instance Logs',
+    'Instance: '+instance.name,
+    'Status: '+instance.status,
+    'Generated: '+new Date().toISOString(),
+    ''
+  ].concat(String(logText).split('\n'));
+  var content = 'BT\n/F1 11 Tf\n50 790 Td\n14 TL\n'+lines.map(function(line) {
+    return '('+escapePdfText(line)+') Tj\nT*';
+  }).join('\n')+'\nET';
+  var objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    '<< /Length '+content.length+' >>\nstream\n'+content+'\nendstream'
+  ];
+  var pdf = '%PDF-1.4\n';
+  var offsets = [0];
+  objects.forEach(function(object,index) {
+    offsets.push(pdf.length);
+    pdf += (index+1)+' 0 obj\n'+object+'\nendobj\n';
+  });
+  var xrefOffset = pdf.length;
+  pdf += 'xref\n0 '+(objects.length+1)+'\n0000000000 65535 f \n';
+  for (var i=1;i<offsets.length;i++) pdf += String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+  pdf += 'trailer\n<< /Size '+(objects.length+1)+' /Root 1 0 R >>\nstartxref\n'+xrefOffset+'\n%%EOF';
+  return new TextEncoder().encode(pdf);
+}
+
+function downloadInstanceLogsPdf(id) {
+  var instance = window.modelInstances.find(function(item) { return item.id === id; });
+  if (!instance) return;
+  var pdfBytes = buildLogPdf(instance,getInstanceLog(instance));
+  var blob = new Blob([pdfBytes],{type:'application/pdf'});
+  var url = URL.createObjectURL(blob);
+  var link = document.createElement('a');
+  link.href = url;
+  link.download = instance.name+'-logs.pdf';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(function() { URL.revokeObjectURL(url); },0);
+}
+
+document.getElementById('instanceLogModal').addEventListener('click',function(event) {
+  if (event.target === this) hideInstanceLogs();
+});
+document.addEventListener('keydown',function(event) {
+  if (event.key === 'Escape' && document.getElementById('instanceLogModal').classList.contains('show')) hideInstanceLogs();
+});
+
+// ==== Model Weight Upload ====
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 B';
+  var units = ['B','KB','MB','GB','TB'];
+  var i = Math.floor(Math.log(bytes) / Math.log(1024));
+  return (bytes / Math.pow(1024, i)).toFixed(i > 0 ? 1 : 0) + ' ' + units[i];
+}
+
+function handleWeightUpload(fileInputId, fileListId, pathInputId) {
+  var input = document.getElementById(fileInputId);
+  var fileList = document.getElementById(fileListId);
+  var pathInput = document.getElementById(pathInputId);
+  if (!input || !fileList) return;
+  var files = Array.from(input.files);
+  var MAX_SIZE = 5 * 1024 * 1024 * 1024; // 5GB
+  var oversized = files.filter(function(f) { return f.size > MAX_SIZE; });
+  if (oversized.length) {
+    alert('以下文件超过 5GB 限制，请上传到 NFS 共享盘后填写路径：\n' + oversized.map(function(f) { return f.name + ' (' + formatFileSize(f.size) + ')'; }).join('\n'));
+    files = files.filter(function(f) { return f.size <= MAX_SIZE; });
+    input.value = '';
+  }
+  if (!files.length) return;
+  fileList.innerHTML = files.map(function(f, i) {
+    return '<span class="upload-file-item"><span class="upload-file-name" title="'+f.name+'">'+f.name+'</span><span class="upload-file-size">'+formatFileSize(f.size)+'</span><button class="upload-file-remove" type="button" onclick="removeUploadFile(\''+fileListId+'\',\''+pathInputId+'\','+i+')">×</button></span>';
+  }).join('');
+  if (pathInput) {
+    pathInput.value = files.map(function(f) { return f.name; }).join(', ');
+  }
+  // Store files reference for later use
+  fileList._uploadFiles = files;
+}
+
+function removeUploadFile(fileListId, pathInputId, index) {
+  var fileList = document.getElementById(fileListId);
+  var pathInput = document.getElementById(pathInputId);
+  if (!fileList || !fileList._uploadFiles) return;
+  var files = Array.from(fileList._uploadFiles);
+  files.splice(index, 1);
+  fileList._uploadFiles = files;
+  if (!files.length) {
+    fileList.innerHTML = '';
+    if (pathInput) pathInput.value = '';
+    return;
+  }
+  fileList.innerHTML = files.map(function(f, i) {
+    return '<span class="upload-file-item"><span class="upload-file-name" title="'+f.name+'">'+f.name+'</span><span class="upload-file-size">'+formatFileSize(f.size)+'</span><button class="upload-file-remove" type="button" onclick="removeUploadFile(\''+fileListId+'\',\''+pathInputId+'\','+i+')">×</button></span>';
+  }).join('');
+  if (pathInput) {
+    pathInput.value = files.map(function(f) { return f.name; }).join(', ');
+  }
+}
+
+var resourceGroupCapacities = { '推理组':4, '测试1':10, 'GPU-Cluster-Prod':6 };
+
+function getResourceGroupRemaining(resourceGroup) {
+  var capacity = resourceGroupCapacities[resourceGroup] || 0;
+  var used = (window.deployments || []).reduce(function(total, deployment) {
+    if (deployment.resourceGroup !== resourceGroup) return total;
+    var replicaParts = String(deployment.replicas || '0').split('/');
+    var configured = Number(replicaParts[1] || replicaParts[0]) || 0;
+    return total + configured;
+  }, 0);
+  return Math.max(0, capacity - used);
+}
+
+function updateDeployReplicaLimit() {
+  var resourceGroup = document.getElementById('deployResourceGroup').value;
+  var max = getResourceGroupRemaining(resourceGroup);
+  var output = document.getElementById('deployReplicaCount');
+  var current = Number(output.textContent) || 1;
+  output.textContent = max === 0 ? '0' : String(Math.min(Math.max(1, current), max));
+  document.getElementById('deployReplicaMax').textContent = String(max);
+  var stepperButtons = document.querySelectorAll('#deployModal .deploy-stepper button');
+  stepperButtons[0].disabled = Number(output.textContent) <= 1;
+  document.getElementById('deployReplicaIncrease').disabled = Number(output.textContent) >= max;
+}
+
+function changeDeployReplicas(delta) {
+  var output = document.getElementById('deployReplicaCount');
+  var max = getResourceGroupRemaining(document.getElementById('deployResourceGroup').value);
+  var next = Math.min(max, Math.max(1, Number(output.textContent) + delta));
+  output.textContent = String(max === 0 ? 0 : next);
+  updateDeployReplicaLimit();
+}
+
+window._inlineEdits = {};
+
+function changeDeployInstanceInline(name, delta) {
+  var d = window.deployments.find(function(x) { return x.name === name; });
+  if (!d) return;
+  var edit = window._inlineEdits[name];
+  if (!edit) {
+    var parts = String(d.replicas).split('/');
+    edit = {
+      running: parseInt(parts[0]) || 0,
+      configured: parseInt(parts[1] || parts[0]) || 0
+    };
+    window._inlineEdits[name] = edit;
+  }
+  if (delta > 0) {
+    var originalConfigured = parseInt(String(d.replicas).split('/')[1] || String(d.replicas).split('/')[0]) || 0;
+    var maxForThis = getResourceGroupRemaining(d.resourceGroup) + originalConfigured;
+    if (edit.configured >= maxForThis) {
+      showToast('该资源组的剩余资源最多可部署 ' + maxForThis + ' 个实例', true);
+      return;
+    }
+    edit.configured += 1;
+  } else {
+    edit.configured = Math.max(0, edit.configured - 1);
+    edit.running = Math.min(edit.running, edit.configured);
+  }
+  renderDeployments();
+}
+
+function confirmInstanceEdit(name) {
+  var edit = window._inlineEdits[name];
+  if (!edit) return;
+  var d = window.deployments.find(function(x) { return x.name === name; });
+  if (d) { d.replicas = edit.running + '/' + edit.configured; }
+  delete window._inlineEdits[name];
+  renderDeployments();
+}
+
+function cancelInstanceEdit(name) {
+  delete window._inlineEdits[name];
+  renderDeployments();
+}
+
+function toggleDeployAdvanced(forceOpen) {
+  var body = document.getElementById('deployAdvancedBody');
+  var trigger = document.getElementById('deployAdvancedTrigger');
+  var arrow = document.getElementById('deployAdvancedArrow');
+  var open = typeof forceOpen === 'boolean' ? forceOpen : !body.classList.contains('open');
+  body.classList.toggle('open', open);
+  arrow.classList.toggle('open', open);
+  trigger.setAttribute('aria-expanded', String(open));
+}
+
+// ==== Env / LoRA rows ====
+// ==== Deploy modal ====
+function populateDeployModelSelect() {
+  var select = document.getElementById('deployName');
+  if (!select) return;
+  select.innerHTML = '<option value="">-- 请选择模型库中的模型 --</option>' +
+    window.catalogModels.map(function(model) {
+      return '<option value="'+model.id+'">'+escapeCatalogText(model.name)+' ('+escapeCatalogText(model.size)+'B, '+escapeCatalogText(model.category)+')</option>';
+    }).join('');
+}
+
+function onDeployModelSelect(modelId) {
+  if (!modelId) {
+    document.getElementById('deployModelPath').value = '';
+    document.getElementById('bkVersion').value = '';
+    document.getElementById('deployRemark').value = '';
+    return;
+  }
+  var model = window.catalogModels.find(function(item) { return item.id === modelId; });
+  if (!model) return;
+  document.getElementById('deployModelPath').value = model.weightPath || '';
+  document.getElementById('bkVersion').value = model.imagePath || '';
+  document.getElementById('deployRemark').value = model.description || '';
+}
+
+function showDeployModal(mode, deployData) {
+  deployModalMode = mode;
+  deployModalSourceName = deployData ? deployData.name : null;
+  document.getElementById('deployModalTitle').textContent = mode === 'add' ? '新建部署' : mode === 'clone' ? '克隆部署' : '编辑部署';
+  populateDeployModelSelect();
+  if (mode === 'add') {
+    onDeployModelSelect('');
+    document.getElementById('deployReplicaCount').textContent = '1';
+    document.getElementById('deployResourceGroup').value = '推理组';
+    document.getElementById('deployPlacementStrategy').value = 'free';
+  } else if (mode === 'clone' && deployData) {
+    document.getElementById('deployName').value = deployData.modelId || '';
+    onDeployModelSelect(deployData.modelId || '');
+    document.getElementById('deployResourceGroup').value = deployData.resourceGroup || '推理组';
+    var replicas = parseInt(deployData.replicas) || 1;
+    document.getElementById('deployReplicaCount').textContent = replicas;
+    document.getElementById('deployPlacementStrategy').value = 'free';
+  } else if (mode === 'edit' && deployData) {
+    document.getElementById('deployName').value = deployData.modelId || '';
+    onDeployModelSelect(deployData.modelId || '');
+    document.getElementById('deployResourceGroup').value = deployData.resourceGroup || '推理组';
+    var replicas = parseInt(deployData.replicas) || 1;
+    document.getElementById('deployReplicaCount').textContent = replicas;
+  }
+  toggleDeployAdvanced(false);
+  updateDeployReplicaLimit();
+  document.getElementById('deployModal').classList.add('show');
+}
+function hideDeployModal() {
+  document.getElementById('deployModal').classList.remove('show');
+}
+document.getElementById('deployModal').addEventListener('click', function(e) {
+  if (e.target === this) hideDeployModal();
+});
+
+// ==== Deploy actions ====
+function editDeploy(name) {
+  var d = window.deployments.find(function(x) { return x.name === name; });
+  if (d) { showDeployModal('edit', d); }
+}
+function startDeploy(name) {
+  var d = window.deployments.find(function(x) { return x.name === name; });
+  if (d) { d.status = 'running'; renderDeployments(); }
+}
+function stopDeploy(name) {
+  var d = window.deployments.find(function(x) { return x.name === name; });
+  if (d) { d.status = 'stopped'; renderDeployments(); }
+}
+function cloneDeploy(name) {
+  var d = window.deployments.find(function(x) { return x.name === name; });
+  if (d) { showDeployModal('clone', d); }
+}
+function deleteDeploy(name) {
+  window.deployments = window.deployments.filter(function(x) { return x.name !== name; });
+  renderDeployments();
+}
+
+// ==== Deploy submit ====
+var deployModalMode = 'add';
+var deployModalSourceName = null;
+
+function showToast(msg, isError) {
+  var toast = document.getElementById('toast');
+  toast.textContent = msg;
+  toast.style.background = isError ? '#e5484d' : '#059669';
+  toast.style.opacity = '1';
+  clearTimeout(toast._timeout);
+  toast._timeout = setTimeout(function(){ toast.style.opacity = '0'; }, 2000);
+}
+
+function handleDeploy() {
+  var modelId = document.getElementById('deployName').value;
+  var catalogModel = window.catalogModels.find(function(m) { return m.id === modelId; });
+  var replicas = parseInt(document.getElementById('deployReplicaCount').textContent) || 1;
+  var resourceGroup = document.getElementById('deployResourceGroup').value;
+  var now = new Date().toISOString().replace('T',' ').substring(0, 19);
+
+  if (deployModalMode === 'clone') {
+    var nameBase = (catalogModel ? catalogModel.name : 'deployment') + '-clone';
+    var deployName = nameBase;
+    var counter = 1;
+    while (window.deployments.some(function(d) { return d.name === deployName; })) {
+      counter++;
+      deployName = nameBase + '-' + counter;
+    }
+    window.deployments.push({
+      name: deployName,
+      modelId: modelId,
+      type: catalogModel ? catalogModel.category : 'LLM',
+      resourceGroup: resourceGroup,
+      source: catalogModel ? 'Hugging Face/' + catalogModel.name : '',
+      replicas: '0/' + replicas,
+      status: 'stopped',
+      createdAt: now,
+      selected: false,
+      children: []
+    });
+  } else if (deployModalMode === 'add') {
+    var deployName2 = catalogModel ? catalogModel.name : 'deployment';
+    var counter2 = 1;
+    while (window.deployments.some(function(d) { return d.name === deployName2; })) {
+      counter2++;
+      deployName2 = (catalogModel ? catalogModel.name : 'deployment') + '-' + counter2;
+    }
+    window.deployments.push({
+      name: deployName2,
+      modelId: modelId,
+      type: catalogModel ? catalogModel.category : 'LLM',
+      resourceGroup: resourceGroup,
+      source: catalogModel ? 'Hugging Face/' + catalogModel.name : '',
+      replicas: '0/' + replicas,
+      status: 'stopped',
+      createdAt: now,
+      selected: false,
+      children: []
+    });
+  } else if (deployModalMode === 'edit' && deployModalSourceName) {
+    var d = window.deployments.find(function(x) { return x.name === deployModalSourceName; });
+    if (d) {
+      d.resourceGroup = resourceGroup;
+      d.replicas = replicas + '/' + replicas;
+      d.modelId = modelId;
+      if (catalogModel) {
+        d.source = 'Hugging Face/' + catalogModel.name;
+        d.type = catalogModel.category;
+      }
+    }
+  }
+  renderDeployments();
+  hideDeployModal();
+  showToast('部署已提交');
+}
+
+// ==== Batch select & start/stop ====
+function selectDeploy(name, checked) {
+  var d = window.deployments.find(function(x) { return x.name === name; });
+  if (d) d.selected = checked;
+  updateDeployBatchBar();
+}
+
+function toggleAllDeployments(checked) {
+  window.deployments.forEach(function(d) { d.selected = checked; });
+  renderDeployments();
+}
+
+function updateDeployBatchBar() {
+  var count = window.deployments.filter(function(d) { return d.selected; }).length;
+  document.getElementById('deployBatchCount').textContent = '已选 ' + count + ' 项';
+  document.getElementById('deployBatchBar').style.display = count > 0 ? 'flex' : 'none';
+  var selectAll = document.getElementById('deploySelectAll');
+  selectAll.checked = window.deployments.length > 0 && count === window.deployments.length;
+  selectAll.indeterminate = count > 0 && count < window.deployments.length;
+}
+
+function batchStartDeployments() {
+  var selected = window.deployments.filter(function(d) { return d.selected; });
+  var stopped = selected.filter(function(d) { return d.status !== 'running'; });
+  if (!stopped.length) { showToast('所选部署均已处于运行状态', true); return; }
+  if (!window.confirm('确认启动选中的 ' + stopped.length + ' 个部署？')) return;
+  stopped.forEach(function(d) { d.status = 'running'; });
+  renderDeployments();
+  showToast('已启动 ' + stopped.length + ' 个部署');
+}
+
+function batchStopDeployments() {
+  var selected = window.deployments.filter(function(d) { return d.selected; });
+  var running = selected.filter(function(d) { return d.status === 'running'; });
+  if (!running.length) { showToast('所选部署均已处于停止状态', true); return; }
+  if (!window.confirm('确认停止选中的 ' + running.length + ' 个部署？')) return;
+  running.forEach(function(d) { d.status = 'stopped'; });
+  renderDeployments();
+  showToast('已停止 ' + running.length + ' 个部署');
+}
+
+function batchDeleteDeployments() {
+  var selected = window.deployments.filter(function(d) { return d.selected; });
+  if (!selected.length) return;
+  if (!window.confirm('确认删除选中的 ' + selected.length + ' 个部署？此操作不可撤销。')) return;
+  window.deployments = window.deployments.filter(function(d) { return !d.selected; });
+  renderDeployments();
+  showToast('已删除 ' + selected.length + ' 个部署');
+}
+
+// ==== Show instances for deploy ====
+function showInstancesFor(deployName) {
+  document.getElementById('instanceFilterLabel').textContent = '当前部署：' + deployName;
+  document.getElementById('instanceFilterBadge').style.display = 'inline-flex';
+  navTo('instances');
+}
+
+// ==== Deploy table data ====
+window.deployments = [
+  { name:'qwen3.6-27b', modelId:'qwen3-7b', type:'LLM', resourceGroup:'测试1', source:'Hugging Face/Qwen/Qwen3.6-27B', replicas:'0/3', status:'stopped', createdAt:'2026-06-30 14:17:42', children:[
+    { name:'qwen3.6-27b-X1xEx', status:'pending', createdAt:'2026-07-02 10:05:00' },
+    { name:'qwen3.6-27b-7DRSg', status:'pending', createdAt:'2026-06-30 16:39:02' },
+    { name:'qwen3.6-27b-2ejux', status:'pending', createdAt:'2026-06-30 14:17:42' },
+  ]},
+  { name:'demo-whisper-large-v3', modelId:'whisper-large-v3', type:'Speech-To-Text', resourceGroup:'测试1', source:'Hugging Face/openai/whisper-large-v3', replicas:'0/3', status:'stopped', createdAt:'2026-06-30 14:10:36', children:[
+    { name:'demo-whisper-large-v3-r1', status:'pending', createdAt:'2026-06-30 14:10:36' },
+    { name:'demo-whisper-large-v3-than4', status:'pending', createdAt:'2026-06-28 09:41:32' },
+    { name:'demo-whisper-large-v3-PNYsA', status:'pending', createdAt:'2026-06-28 09:41:32' },
+  ]},
+  { name:'glm-4-flash-prod', modelId:'chatglm4-32b', type:'LLM', resourceGroup:'GPU-Cluster-Prod', source:'Hugging Face/THUDM/glm-4-flash', replicas:'2/2', status:'running', createdAt:'2026-06-24 10:00:00', children:[
+    { name:'glm-4-flash-prod-a1b2c', status:'running', createdAt:'2026-06-24 10:05:00' },
+    { name:'glm-4-flash-prod-d3e4f', status:'running', createdAt:'2026-06-24 10:05:00' },
+  ]},
+];
+
+function renderDeployments() {
+  var search = document.getElementById('deploySearch').value.trim().toLowerCase();
+  var category = document.getElementById('deployCategoryFilter').value;
+  var status = document.getElementById('deployStatusFilter').value;
+  var resourceGroup = document.getElementById('deployResourceFilter').value;
+  document.getElementById('deploySearchClear').hidden = !search;
+  var deploys = window.deployments.filter(function(d) {
+    if (resourceGroup && d.resourceGroup !== resourceGroup) return false;
+    if (status && d.status !== status) return false;
+    if (search && d.name.toLowerCase().indexOf(search) === -1) return false;
+    if (category) {
+      var catModel = window.catalogModels && window.catalogModels.find(function(m) { return m.id === d.modelId; });
+      if (!catModel || catModel.category !== category) return false;
+    }
+    return true;
+  });
+  // apply sorting
+  if (deploySortCol) {
+    deploys.sort(function(a, b) {
+      var va, vb;
+      switch (deploySortCol) {
+        case 'name': va = a.name.toLowerCase(); vb = b.name.toLowerCase(); break;
+        case 'resourceGroup': va = a.resourceGroup; vb = b.resourceGroup; break;
+        case 'source': va = a.source; vb = b.source; break;
+        case 'replicas': va = getDeployReplicasNum(a); vb = getDeployReplicasNum(b); break;
+        case 'createdAt': va = a.createdAt; vb = b.createdAt; break;
+        default: return 0;
+      }
+      if (va < vb) return deploySortDir === 'asc' ? -1 : 1;
+      if (va > vb) return deploySortDir === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }
+  // update sort arrows
+  document.querySelectorAll('.deploy-sort-arrow').forEach(function(el) { el.textContent = ' ↕'; });
+  if (deploySortCol) {
+    var arrow = document.getElementById('deploySortArrow-' + deploySortCol);
+    if (arrow) arrow.textContent = deploySortDir === 'asc' ? ' ↑' : ' ↓';
+  }
+  var tbody = document.getElementById('deployTableBody');
+  var html = '';
+  deploys.forEach(function(d, i) {
+    var originalIndex = window.deployments.indexOf(d);
+    html += '<tr class="deploy-parent-row">'+
+      '<td class="deploy-select-cell"><input type="checkbox" '+(d.selected?'checked':'')+' onchange="selectDeploy(\''+d.name+'\',this.checked)" aria-label="选择 '+d.name+'"></td>'+
+      (function(){
+        var catModel = window.catalogModels && window.catalogModels.find(function(m) { return m.id === d.modelId; });
+        var displayType = catModel ? catModel.category : d.type;
+        return '<td><div class="deploy-name-line"><button class="deploy-chevron" id="deployChevron'+originalIndex+'" type="button" onclick="toggleDeployGroup('+originalIndex+')">⌄</button><span class="deploy-parent-name">'+d.name+'</span><span class="deploy-type-tag '+(displayType === '语音识别模型' || displayType === 'Speech-To-Text' ? 'speech' : '')+'">'+displayType+'</span></div></td>';
+      })()+
+      '<td>'+d.resourceGroup+'</td>'+
+      '<td><span class="deploy-source" title="'+d.source+'">'+d.source+'</span></td>'+
+      (function(){
+        var edit = window._inlineEdits[d.name];
+        var displayVal, isEditing;
+        if (edit) {
+          displayVal = edit.running + '/' + edit.configured;
+          isEditing = true;
+        } else {
+          displayVal = d.replicas;
+          isEditing = false;
+        }
+        var remaining = getResourceGroupRemaining(d.resourceGroup);
+        var atMax = (edit ? edit.configured : (parseInt(d.replicas.split('/')[1] || d.replicas.split('/')[0]) || 0)) >= (resourceGroupCapacities[d.resourceGroup] || 0) || remaining <= 0;
+        var cell = '<td><div class="replicas-stepper">'+
+          '<button type="button" onclick="changeDeployInstanceInline(\''+d.name+'\',-1)" aria-label="减少实例数">−</button>'+
+          '<span class="rs-val">'+displayVal+'</span>'+
+          '<button type="button" class="'+(atMax && !isEditing ? 'rs-btn-max' : '')+'" onclick="changeDeployInstanceInline(\''+d.name+'\',1)" aria-label="增加实例数">＋</button>';
+        if (isEditing) {
+          cell += '<button type="button" class="rs-confirm" onclick="confirmInstanceEdit(\''+d.name+'\')" title="确认">✓</button>'+
+            '<button type="button" class="rs-cancel" onclick="cancelInstanceEdit(\''+d.name+'\')" title="取消">✗</button>';
+        }
+        cell += '</div></td>';
+        return cell;
+      })()+
+      '<td>'+d.createdAt+'</td>'+
+      '<td><div class="deploy-actions">'+
+        '<button class="deploy-icon-btn" type="button" title="编辑" onclick="editDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg></button>'+
+        (d.status === 'running'
+          ? '<button class="deploy-icon-btn" type="button" title="停止" onclick="stopDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg></button>'
+          : '<button class="deploy-icon-btn" type="button" title="启动" onclick="startDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 20,12 6,21"/></svg></button>'
+        )+
+        '<button class="deploy-icon-btn" type="button" title="克隆" onclick="cloneDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>'+
+        '<button class="deploy-icon-btn danger" type="button" title="删除" onclick="deleteDeploy(\''+d.name+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/></svg></button>'+
+        '</div></td>'+
+      '</tr>';
+    d.children.forEach(function(child) {
+      var statusLabel = child.status === 'running' ? '运行中' : '待处理';
+      html += '<tr class="deploy-child-row" data-deploy-group="'+originalIndex+'">'+
+        '<td class="deploy-select-cell"></td>'+
+        '<td><div class="deploy-child-name">'+child.name+'</div></td><td></td><td></td>'+
+        '<td><span class="deploy-status '+child.status+'">'+statusLabel+'</span></td>'+
+        '<td>'+child.createdAt+'</td>'+
+        '<td><div class="deploy-actions"><button class="deploy-icon-btn danger" type="button" title="删除"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 14h10l1-14M10 11v6M14 11v6"/></svg></button></div></td>'+
+        '</tr>';
+    });
+  });
+  tbody.innerHTML = html;
+  updateDeployBatchBar();
+  // restore expand/collapse state
+  if (deployAllExpanded) {
+    document.querySelectorAll('[data-deploy-group]').forEach(function(row) { row.hidden = false; });
+    document.querySelectorAll('.deploy-chevron').forEach(function(btn) { btn.classList.remove('closed'); });
+  }
+}
+
+function toggleDeployGroup(index) {
+  var rows = document.querySelectorAll('[data-deploy-group="'+index+'"]');
+  var collapse = rows.length && !rows[0].hidden;
+  rows.forEach(function(row) { row.hidden = collapse; });
+  document.getElementById('deployChevron'+index).classList.toggle('closed', collapse);
+}
+
+function toggleDeployExpand(index) {
+  toggleDeployGroup(index);
+}
+
+var deploySortCol = null;
+var deploySortDir = 'asc';
+var deployAllExpanded = false;
+
+function sortDeployments(col) {
+  if (deploySortCol === col) {
+    deploySortDir = deploySortDir === 'asc' ? 'desc' : 'asc';
+  } else {
+    deploySortCol = col;
+    deploySortDir = 'asc';
+  }
+  renderDeployments();
+}
+
+function getDeployReplicasNum(d) {
+  var parts = String(d.replicas).split('/');
+  return parseInt(parts[1] || parts[0]) || 0;
+}
+
+function toggleAllDeployGroups() {
+  deployAllExpanded = !deployAllExpanded;
+  var btn = document.getElementById('deployExpandAllBtn');
+  btn.textContent = deployAllExpanded ? '⊟' : '⊞';
+  // toggle all visible child rows
+  document.querySelectorAll('[data-deploy-group]').forEach(function(row) {
+    row.hidden = !deployAllExpanded;
+  });
+  // update all chevrons
+  document.querySelectorAll('.deploy-chevron').forEach(function(b) {
+    b.classList.toggle('closed', !deployAllExpanded);
+  });
+}
+
+function resetDeployFilter() {
+  document.getElementById('deploySearch').value = '';
+  document.getElementById('deployCategoryFilter').value = '';
+  document.getElementById('deployStatusFilter').value = '';
+  document.getElementById('deployResourceFilter').value = '';
+  renderDeployments();
+}
+
+function clearDeploySearch() {
+  document.getElementById('deploySearch').value = '';
+  renderDeployments();
+}
+
+renderDeployments();
+
+// ==== Catalog modal ====
+var catalogDevelopers = {
+  智谱: { label:'智谱', glyph:'智', className:'brand-zhipu' },
+  千问: { label:'千问', glyph:'千', className:'brand-tongyi' },
+  DeepSeek: { label:'DeepSeek', glyph:'D', className:'brand-deepseek' },
+};
+var catalogModalMode = 'add';
+var catalogEditingId = null;
+var currentCatalogIconData = '';
+
+// ==== Shared catalog model data ====
+window.catalogModels = [
+  { id:'deepseek-v3', developer:'DeepSeek', name:'deepseek-v3', size:'671', category:'通用大模型', types:['通用大模型'], capability:'文生文', createdAt:'2026-06-24', weightPath:'/models/deepseek-v3', imagePath:'harbor.xxx.com/lm/vllm:deepseek-v3', description:'DeepSeek V3 通用大语言模型。' },
+  { id:'embedding-v3', developer:'智谱', name:'embedding-v3', size:'0.3', category:'嵌入模型', types:['嵌入模型'], capability:'文生文', createdAt:'2026-04-08', weightPath:'/models/embedding-v3', imagePath:'harbor.xxx.com/lm/embedding:v3', description:'文本向量化模型。' },
+  { id:'cogvlm-9b', developer:'智谱', name:'cogvlm-9b', size:'9', category:'图片模型', types:['图片模型'], capability:'图生文', createdAt:'2026-03-03', weightPath:'/models/cogvlm-9b', imagePath:'harbor.xxx.com/lm/vllm:cogvlm-9b', description:'视觉语言理解模型。' },
+  { id:'chatglm4-32b', developer:'智谱', name:'chatglm4-32b', size:'32', category:'通用大模型', types:['通用大模型'], capability:'文生文', createdAt:'2026-03-03', weightPath:'/models/chatglm4-32b', imagePath:'harbor.xxx.com/lm/vllm:chatglm4-32b', description:'面向对话与生成任务的通用模型。' },
+  { id:'llama-3-1', developer:'智谱', name:'LLaMA 3.1', size:'70', category:'通用大模型', types:['通用大模型'], capability:'文生文', createdAt:'2025-11-24', weightPath:'/models/llama-3.1', imagePath:'harbor.xxx.com/lm/vllm:llama-3.1', description:'LLaMA 3.1 通用语言模型。' },
+  { id:'baichuan-m2-plus', developer:'千问', name:'Baichuan-M2 Plus', size:'13', category:'通用大模型', types:['通用大模型'], capability:'文生文', createdAt:'2025-11-24', weightPath:'/models/baichuan-m2-plus', imagePath:'harbor.xxx.com/lm/vllm:baichuan-m2-plus', description:'百川通用大语言模型。' },
+  { id:'qwen3-7b', developer:'千问', name:'Qwen3-7B', size:'7', category:'通用大模型', types:['通用大模型'], capability:'文生文', createdAt:'2025-10-28', weightPath:'/models/Qwen3-7B', imagePath:'harbor.xxx.com/lm/vllm:qwen3-7b', description:'通义千问 Qwen3 7B 模型。' },
+  { id:'t1-100', developer:'千问', name:'T1-100', size:'100', category:'重排模型', types:['重排模型'], capability:'文生文', createdAt:'2025-12-12', weightPath:'/models/T1-100', imagePath:'harbor.xxx.com/lm/vllm:t1-100', description:'面向复杂任务的推理模型。' },
+  { id:'whisper-large-v3', developer:'智谱', name:'whisper-large-v3', size:'1.5', category:'语音识别模型', types:['语音识别模型'], capability:'语音识别', createdAt:'2026-01-15', weightPath:'/models/whisper-large-v3', imagePath:'harbor.xxx.com/lm/vllm:whisper-v3', description:'OpenAI Whisper Large V3 语音识别模型。' },
+];
+
+function escapeCatalogText(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(ch) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[ch];
+  });
+}
+
+
+function catalogCategoryClass(category) {
+  if (category === '嵌入模型' || category === '向量模型') return 'category-embedding';
+  if (category === '图片模型' || category === '图像模型') return 'category-image';
+  if (category === '重排模型' || category === '推理模型') return 'category-reasoning';
+  return 'category-llm';
+}
+
+function updateCatalogSearchClear() {
+  var search = document.getElementById('catalogSearch');
+  var clear = document.getElementById('catalogSearchClear');
+  if (!search || !clear) return;
+  clear.hidden = !search.value;
+}
+
+function handleCatalogSearchInput() {
+  updateCatalogSearchClear();
+  renderCatalogCards();
+}
+
+function clearCatalogSearch() {
+  var search = document.getElementById('catalogSearch');
+  if (!search) return;
+  search.value = '';
+  updateCatalogSearchClear();
+  renderCatalogCards();
+  search.focus();
+}
+
+function resetCatalogFilter() {
+  document.getElementById('catalogSearch').value = '';
+  document.getElementById('catalogCategory').value = '';
+  document.getElementById('catalogDeveloper').value = '';
+  updateCatalogSearchClear();
+  renderCatalogCards();
+}
+
+function renderCatalogCards() {
+  var grid = document.getElementById('catalogGrid');
+  if (!grid) return;
+  var query = (document.getElementById('catalogSearch').value || '').trim().toLowerCase();
+  var category = document.getElementById('catalogCategory').value;
+  var developer = document.getElementById('catalogDeveloper').value;
+  var models = window.catalogModels.filter(function(model) {
+    var matchesName = !query || model.name.toLowerCase().indexOf(query) >= 0;
+    var matchesCategory = !category || (model.types || [model.category]).indexOf(category) >= 0;
+    var matchesDeveloper = !developer || model.developer === developer;
+    return matchesName && matchesCategory && matchesDeveloper;
+  });
+  grid.innerHTML = models.map(function(model) {
+    var developer = catalogDevelopers[model.developer] || { glyph:(model.developer || '?').charAt(0).toUpperCase(), className:'brand-zhipu' };
+    var icon = model.iconData
+      ? '<img class="catalog-brand catalog-brand-image" src="'+escapeCatalogText(model.iconData)+'" alt="'+escapeCatalogText(model.name)+' 图标">'
+      : '<span class="catalog-brand '+developer.className+'">'+escapeCatalogText(developer.glyph)+'</span>';
+    return '<article class="catalog-card">'+
+      '<div class="catalog-card-head">'+
+        icon+
+        '<div class="catalog-title-block"><h3 class="catalog-card-name" title="'+escapeCatalogText(model.name)+'">'+escapeCatalogText(model.name)+'</h3></div>'+
+        '<button class="catalog-more" title="更多操作" onclick="editCatalogModel(\''+model.id+'\')">•••</button>'+
+      '</div>'+
+      '<div class="catalog-meta">'+
+        '<span class="catalog-meta-label">参数量</span><span class="catalog-meta-value">'+escapeCatalogText(model.size)+'B</span>'+
+        '<span class="catalog-meta-label">开发者</span><span class="catalog-meta-value catalog-developer-value" title="'+escapeCatalogText(model.developer)+'">'+escapeCatalogText(model.developer)+'</span>'+
+        '<span class="catalog-meta-label">模型分类</span><span class="catalog-tags"><span class="catalog-tag '+catalogCategoryClass(model.category)+'">'+escapeCatalogText(model.category)+'</span></span>'+
+        '<span class="catalog-meta-label">创建时间</span><span class="catalog-meta-value" style="font-weight:500;color:#687386;">'+escapeCatalogText(model.createdAt)+'</span>'+
+      '</div>'+
+      '<div class="catalog-actions">'+
+        '<button class="catalog-action-link" onclick="viewCatalogModel(\''+model.id+'\')">查看</button>'+
+        '<button class="catalog-action-link" onclick="editCatalogModel(\''+model.id+'\')">编辑</button>'+
+        '<button class="catalog-deploy-btn" onclick="deployCatalogModel(\''+model.id+'\')">部署</button>'+
+      '</div>'+
+    '</article>';
+  }).join('');
+  document.getElementById('catalogEmpty').style.display = models.length ? 'none' : 'block';
+}
+
+function populateCatalogForm(model) {
+  var data = model || {};
+  document.getElementById('mName').value = data.name || '';
+  document.getElementById('mDeveloper').value = data.developer || '';
+  document.getElementById('mSize').value = data.size || '';
+  document.getElementById('mWeight').value = data.weightPath || '';
+  document.getElementById('mImage').value = data.imagePath || '';
+  document.getElementById('mDescription').value = data.description || '';
+  currentCatalogIconData = data.iconData || '';
+  updateCatalogIconPreview();
+  document.getElementById('mIcon').value = '';
+  var types = data.types || ['通用大模型'];
+  document.querySelectorAll('#catalogTypeOptions input').forEach(function(input) {
+    input.checked = types.indexOf(input.value) >= 0;
+  });
+}
+
+function updateCatalogIconPreview() {
+  var preview = document.getElementById('mIconPreview');
+  var placeholder = document.getElementById('mIconPlaceholder');
+  var deleteButton = document.getElementById('catalogIconDelete');
+  var uploadText = document.getElementById('catalogIconUploadText');
+  var hasIcon = !!currentCatalogIconData;
+  preview.hidden = !hasIcon;
+  placeholder.hidden = hasIcon;
+  deleteButton.hidden = !hasIcon;
+  uploadText.textContent = hasIcon ? '重新上传' : '上传本地图片';
+  if (hasIcon) preview.src = currentCatalogIconData;
+  else preview.removeAttribute('src');
+}
+
+function clearCatalogIcon() {
+  currentCatalogIconData = '';
+  document.getElementById('mIcon').value = '';
+  updateCatalogIconPreview();
+  showCatalogFormError('');
+}
+
+function handleCatalogIconUpload(input) {
+  var file = input.files && input.files[0];
+  if (!file) return;
+  if (!/^image\/(png|jpeg|svg\+xml)$/.test(file.type)) {
+    input.value = '';
+    return showCatalogFormError('请上传 PNG、JPG 或 SVG 图片');
+  }
+  if (file.size > 5 * 1024 * 1024) {
+    input.value = '';
+    return showCatalogFormError('图标文件不能超过 5 MB');
+  }
+  var reader = new FileReader();
+  reader.onload = function() {
+    currentCatalogIconData = String(reader.result || '');
+    input.value = '';
+    updateCatalogIconPreview();
+    showCatalogFormError('');
+  };
+  reader.readAsDataURL(file);
+}
+
+function readCatalogForm() {
+  var types = Array.from(document.querySelectorAll('#catalogTypeOptions input:checked')).map(function(input) { return input.value; });
+  return {
+    name: document.getElementById('mName').value.trim(),
+    developer: document.getElementById('mDeveloper').value,
+    size: document.getElementById('mSize').value.trim(),
+    types: types,
+    category: types[0] || '',
+    weightPath: document.getElementById('mWeight').value.trim(),
+    imagePath: document.getElementById('mImage').value.trim(),
+    iconData: currentCatalogIconData,
+    description: document.getElementById('mDescription').value.trim(),
+  };
+}
+
+function showCatalogFormError(message) {
+  var error = document.getElementById('catalogFormError');
+  error.textContent = message;
+  error.style.display = message ? 'block' : 'none';
+}
+
+function showCatalogModal(mode, id) {
+  catalogModalMode = mode;
+  catalogEditingId = id || null;
+  var model = id ? window.catalogModels.find(function(item) { return item.id === id; }) : null;
+  var titleMap = { add:'新建模型', edit:'编辑模型', view:'模型详情' };
+  document.getElementById('modalTitle').textContent = titleMap[mode] || '新建模型';
+  document.getElementById('catalogModalPanel').classList.toggle('is-view', mode === 'view');
+  populateCatalogForm(model);
+  showCatalogFormError('');
+  var disabled = mode === 'view';
+  document.querySelectorAll('#catalogModal input,#catalogModal textarea,#catalogModal select').forEach(function(field) { field.disabled = disabled; });
+  document.getElementById('catalogSaveButton').disabled = disabled;
+  document.getElementById('catalogModal').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+
+function hideCatalogModal() {
+  document.getElementById('catalogModal').classList.remove('show');
+  document.body.style.overflow = '';
+}
+
+function saveCatalogModel() {
+  var data = readCatalogForm();
+  if (!data.name) return showCatalogFormError('请输入模型名称');
+  if (!data.developer) return showCatalogFormError('请输入开发者');
+  if (data.size === '' || Number(data.size) < 0) return showCatalogFormError('请输入正确的参数量');
+  if (!data.iconData) return showCatalogFormError('请上传模型图标');
+  if (!data.types.length) return showCatalogFormError('请至少选择一个模型类型');
+  if (!data.weightPath) return showCatalogFormError('请输入模型权重地址');
+  if (!data.imagePath) return showCatalogFormError('请选择或输入模型镜像地址');
+  var duplicate = window.catalogModels.some(function(item) { return item.name.toLowerCase() === data.name.toLowerCase() && item.id !== catalogEditingId; });
+  if (duplicate) return showCatalogFormError('模型名称不可与已有记录重复');
+  data.capability = (data.category === '图片模型' || data.category === '图像模型') ? '图生文' : '文生文';
+  if (catalogModalMode === 'edit' && catalogEditingId) {
+    var index = window.catalogModels.findIndex(function(item) { return item.id === catalogEditingId; });
+    if (index >= 0) window.catalogModels[index] = Object.assign({}, window.catalogModels[index], data);
+  } else {
+    var now = new Date();
+    data.id = 'model-'+now.getTime();
+    data.createdAt = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-'+String(now.getDate()).padStart(2,'0');
+    window.catalogModels.unshift(data);
+  }
+  renderCatalogCards();
+  hideCatalogModal();
+}
+
+function viewCatalogModel(id) { showCatalogModal('view', id); }
+function editCatalogModel(id) { showCatalogModal('edit', id); }
+function deployCatalogModel(id) {
+  var model = window.catalogModels.find(function(item) { return item.id === id; });
+  if (!model) return;
+  navTo('deploy');
+  showDeployModal('add');
+  document.getElementById('deployName').value = model.id;
+  onDeployModelSelect(model.id);
+}
+
+document.getElementById('catalogModal').addEventListener('click', function(e) {
+  if (e.target === this) hideCatalogModal();
+});
+renderCatalogCards();
+renderModelInstances();
+</script>
+</body>
+</html>
