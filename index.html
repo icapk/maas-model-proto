@@ -1902,15 +1902,11 @@ function hideCatalogModal() {
 
 function saveCatalogModel() {
   var data = readCatalogForm();
-  if (!data.name) return showCatalogFormError('请输入模型名称');
-  if (!data.developer) return showCatalogFormError('请输入开发者');
-  if (data.size === '' || Number(data.size) < 0) return showCatalogFormError('请输入正确的参数量');
-  if (!data.iconData) return showCatalogFormError('请上传模型图标');
-  if (!data.types.length) return showCatalogFormError('请至少选择一个模型类型');
-  if (!data.weightPath) return showCatalogFormError('请输入模型权重地址');
-  if (!data.imagePath) return showCatalogFormError('请选择或输入模型镜像地址');
+  if (!data.name || !data.developer || data.size === '' || Number(data.size) < 0 || !data.iconData || !data.types.length || !data.weightPath || !data.imagePath) {
+    return showToast('请填写必填项', true);
+  }
   var duplicate = window.catalogModels.some(function(item) { return item.name.toLowerCase() === data.name.toLowerCase() && item.id !== catalogEditingId; });
-  if (duplicate) return showCatalogFormError('模型名称不可与已有记录重复');
+  if (duplicate) return showToast('模型名称不可与已有记录重复', true);
   data.capability = (data.category === '图片模型' || data.category === '图像模型') ? '图生文' : '文生文';
   if (catalogModalMode === 'edit' && catalogEditingId) {
     var index = window.catalogModels.findIndex(function(item) { return item.id === catalogEditingId; });
