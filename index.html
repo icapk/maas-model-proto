@@ -1245,7 +1245,14 @@ function getResourceGroupRemaining(resourceGroup) {
 }
 
 function updateDeployReplicaLimit() {
+  var modelId = document.getElementById('deployName').value;
   var resourceGroup = document.getElementById('deployResourceGroup').value;
+  var limitEl = document.getElementById('deployReplicaLimit');
+  if (!modelId) {
+    limitEl.style.display = 'none';
+    document.getElementById('deployReplicaMax').textContent = '0';
+    return;
+  }
   var max = getResourceGroupRemaining(resourceGroup);
   var output = document.getElementById('deployReplicaCount');
   var current = Number(output.textContent) || 1;
@@ -1254,6 +1261,7 @@ function updateDeployReplicaLimit() {
   var stepperButtons = document.querySelectorAll('#deployModal .deploy-stepper button');
   stepperButtons[0].disabled = Number(output.textContent) <= 1;
   document.getElementById('deployReplicaIncrease').disabled = Number(output.textContent) >= max;
+  limitEl.style.display = '';
 }
 
 function changeDeployReplicas(delta) {
@@ -1416,6 +1424,7 @@ function selectDeployModel(modelId) {
     document.getElementById('deployRemark').value = model.description || '';
   }
   closeDeployModelSearch();
+  updateDeployReplicaLimit();
 }
 
 document.addEventListener('click', function(e) {
